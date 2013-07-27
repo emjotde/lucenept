@@ -39,12 +39,13 @@ template <class InputIterator1, class InputIterator2, class OutputIterator>
             SpanSet& prefix = first1->second;
             SpanSet& last   = first2->second;
             
+            // make this linear for sorted ranges !
             SpanSet adjacent;
             BOOST_FOREACH(Span s1, prefix) {
                 BOOST_FOREACH(Span s2, last) {
                     if(s1.second + 1 == s2.first) {
                         adjacent.push_back(std::make_pair(s1.first, s2.second));
-                        continue;
+                        break;
                     }
                 }
             }
