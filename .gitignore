@@ -11,3 +11,9 @@
 *.lai
 *.la
 *.a
+
+# Directories
+bin
+obj
+*.idx
+*.depend
