@@ -11,6 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="align.idx" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -20,8 +21,9 @@
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="align.idx" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-O3" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -32,7 +34,14 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="main.cpp" />
+		<Linker>
+			<Add library="boost_system" />
+			<Add library="lucene++" />
+			<Add library="pthread" />
+		</Linker>
+		<Unit filename="LuceneIndex.cpp" />
+		<Unit filename="LuceneIndex.h" />
+		<Unit filename="query.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

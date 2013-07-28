@@ -38,19 +38,20 @@ LuceneIndex::~LuceneIndex()
     reader_->close();
 }
 
-HitsPtr LuceneIndex::getHits(const std::string& phrase)
+HitsPtr LuceneIndex::getHits(const std::string& phrase, bool inverse)
 {
     String wphrase(_U(phrase.c_str()));
     std::vector<String> terms;
     boost::split(terms, wphrase, boost::is_any_of(L"\t "));
-    return getHits(terms, 0, terms.size());
+    return getHits(terms, 0, terms.size(), inverse);
 }
 
 HitsPtr LuceneIndex::getHits(std::vector<String>& phraseTerms,
                              size_t start,
-                             size_t length)
+                             size_t length,
+                             bool inverse)
 {
-    String phrase = populateCache(phraseTerms, start, length);
+    String phrase = populateCache(phraseTerms, start, length, inverse);
     return cache_[phrase];
 }
 
@@ -90,7 +91,8 @@ AlignedSentence LuceneIndex::hit2AlignedSentence(const Hit& hit, bool inverse)
 String LuceneIndex::populateCache(std::vector<String>& phraseTerms,
                                   size_t start,
                                   size_t length,
-                                  bool inverse) // @todo: implement inversion here
+                                  bool inverse)
+// TODO (marcinj#6#): Add implementation for inverse = true
 {
     String penultimo;
     for (size_t j = 0; j < length - 1; j++)

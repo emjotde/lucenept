@@ -5,7 +5,6 @@
 
 int main(int argc, char** argv)
 {
-
     LuceneIndex luceneIndex(argv[1], true);
 
     size_t lines = 0;
@@ -15,7 +14,7 @@ int main(int argc, char** argv)
         std::cerr << lines++ << std::endl;
         std::cout << line << std::endl;
 
-        luceneIndex.printHitsSentence(line);
+        luceneIndex.printHits(line);
     }
 
     return 0;

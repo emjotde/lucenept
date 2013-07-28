@@ -54,14 +54,14 @@ public:
     LuceneIndex(const std::string&, bool = false);
     ~LuceneIndex();
 
-    HitsPtr getHits(const std::string&);
+    HitsPtr getHits(const std::string&, bool = false);
     AlignedSentence hit2AlignedSentence(const Hit&, bool = false);
 
     size_t printHits(const std::string&);
     void printHitsSentence(const std::string&);
 
 private:
-    HitsPtr getHits(std::vector<Lucene::String>&, size_t, size_t);
+    HitsPtr getHits(std::vector<Lucene::String>&, size_t, size_t, bool = false);
     size_t printHits(std::vector<Lucene::String>&, size_t, size_t);
 
     Lucene::String populateCache(std::vector<Lucene::String>&,
