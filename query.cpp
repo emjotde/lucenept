@@ -85,29 +85,22 @@ int main(int argc, char** argv) {
                 
         for(size_t i = 0; i < terms.size(); i++) {
             for(size_t l = 1; l <= terms.size() && i + l <= terms.size(); l++) {
-                String prefix;
-                
-                Collection<String> phraseTerms = Collection<String>::newInstance();
-                std::wstringstream ss;
-                
-                for(size_t j = 0; j < l; j++) {
+                String penultimo;
+                for(size_t j = 0; j < l - 1; j++) {
                     if(j != 0)
-                        ss << _U(" ");
-                    
-                    ss << terms[i + j];
-                    phraseTerms.add(terms[i + j]);
-                    
-                    if(j == l - 2)
-                        prefix = String(ss.str().c_str());
+                        penultimo.append(_U(" "));
+                    penultimo.append(terms[i + j]);        
                 }
+                String ultimo(terms[i + l - 1]);
                 
-                String phrase(ss.str().c_str());
+                String phrase = ultimo;
+                if(l > 1)
+                    phrase = penultimo + _U(" ") + ultimo;
                 
                 if(cache.count(phrase) == 0) {
-                    String last = terms[i + l - 1];
-                    if(cache.count(last) == 0) {
+                    if(cache.count(ultimo) == 0) {
                         TermPositionsPtr tp = reader->termPositions(
-                            newLucene<Term>(L"source", last));
+                            newLucene<Term>(L"source", ultimo));
                         while(tp->next()) {
                             size_t j = 0;
                             SpanSet spans;
@@ -115,16 +108,16 @@ int main(int argc, char** argv) {
                                 uint32_t pos = tp->nextPosition();
                                 spans.push_back(std::make_pair(pos, pos));
                             }
-                            cache[last].push_back(
+                            cache[ultimo].push_back(
                                 std::make_pair(tp->doc(), spans));
                         }
                     }
-                    
                     if(l > 1) {
-                        phrase_join_intersection(cache[prefix].begin(),
-                            cache[prefix].end(),
-                            cache[last].begin(),
-                            cache[last].end(),
+                        phrase_join_intersection(
+                            cache[penultimo].begin(),
+                            cache[penultimo].end(),
+                            cache[ultimo].begin(),
+                            cache[ultimo].end(),
                             std::back_inserter(cache[phrase]));
                     }    
                 }
@@ -136,16 +129,17 @@ int main(int argc, char** argv) {
                 if(!num)
                     break;
                 
-                Hits nhits;
+                //Hits nhits;
                 size_t n = 10;
                 
                 Hits& hits = cache[phrase];
                 //std::random_shuffle(hits.begin(), hits.end());
-                std::copy(hits.begin(), hits.begin() + (n < hits.size() ? n
-                                                        : hits.size()),
-                          std::back_inserter(nhits));
+                //std::copy(hits.begin(), hits.begin() + (n < hits.size() ? n
+                //                                        : hits.size()),
+                //          std::back_inserter(nhits));
                 
-                BOOST_FOREACH(DocSpanSet docSpanSet, nhits) {
+                size_t m = 0;
+                BOOST_FOREACH(DocSpanSet docSpanSet, hits) {
                     int docId = docSpanSet.first;
                     DocumentPtr doc = reader->document(docId);
                     SingleString source(_B(doc->get(L"source")));
@@ -163,6 +157,9 @@ int main(int argc, char** argv) {
                         std::cout << (size_t)align[i++] << " ";
                     }
                     std::cout << std::endl;
+                    if(m >= n)
+                        break;
+                    m++;
                 }
                 std::cout << std::endl;
             }
