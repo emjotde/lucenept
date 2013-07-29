@@ -39,9 +39,13 @@
 			<Add library="lucene++" />
 			<Add library="pthread" />
 		</Linker>
-		<Unit filename="LuceneIndex.cpp" />
-		<Unit filename="LuceneIndex.h" />
-		<Unit filename="query.cpp" />
+		<Unit filename="src/AlignedSentence.h" />
+		<Unit filename="src/LuceneIndex.cpp" />
+		<Unit filename="src/LuceneIndex.h" />
+		<Unit filename="src/LucenePT.cpp" />
+		<Unit filename="src/LucenePT.h" />
+		<Unit filename="src/query.cpp" />
+		<Unit filename="src/stringpiece.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />
