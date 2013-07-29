@@ -8,7 +8,6 @@ class LucenePT
 {
 public:
     LucenePT(const std::string&, bool = false);
-
     void createPhrase(const std::string&);
 
 private:
