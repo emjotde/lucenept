@@ -14,7 +14,7 @@ int main(int argc, char** argv)
         std::cerr << lines++ << std::endl;
         std::cout << line << std::endl;
 
-        luceneIndex.printHits(line);
+        luceneIndex.printHitsSentence(line);
     }
 
     return 0;

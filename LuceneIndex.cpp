@@ -26,7 +26,7 @@ LuceneIndex::LuceneIndex(const std::string& directory, bool intoMemory)
     DirectoryPtr dir;
     if (intoMemory)
         dir = newLucene<RAMDirectory>(
-                  FSDirectory::open(_U(directory.c_str())));
+            FSDirectory::open(_U(directory.c_str())));
     else
         dir = FSDirectory::open(_U(directory.c_str()));
 
@@ -55,7 +55,7 @@ HitsPtr LuceneIndex::getHits(std::vector<String>& phraseTerms,
     return cache_[phrase];
 }
 
-AlignedSentence LuceneIndex::hit2AlignedSentence(const Hit& hit, bool inverse)
+AlignedSentence LuceneIndex::getAlignedSentence(const Hit& hit, bool inverse)
 {
     DocumentPtr doc = reader_->document(hit.doc);
     ByteArray align = doc->getBinaryValue(L"alignment");
@@ -72,21 +72,23 @@ AlignedSentence LuceneIndex::hit2AlignedSentence(const Hit& hit, bool inverse)
         target = _B(doc->get(L"target")).c_str();
     }
 
-    AlignedSentence as(source, target, Alignment());
-
+    Alignment alignment;
     int i = 0;
     while (i < align.size())
     {
         uint8_t a = align[i++];
         uint8_t b = align[i++];
         if(inverse)
-            as.alignment.push_back(AlignPoint(b, a));
+            alignment.push_back(AlignPoint(b, a));
         else
-            as.alignment.push_back(AlignPoint(a, b));
+            alignment.push_back(AlignPoint(a, b));
     }
+    AlignedSentence as(source, target, alignment);
 
     return as;
 }
+
+
 
 String LuceneIndex::populateCache(std::vector<String>& phraseTerms,
                                   size_t start,
@@ -157,15 +159,15 @@ size_t LuceneIndex::printHits(std::vector<String>& phraseTerms,
     size_t m = 0;
     BOOST_FOREACH (Hit hit, *hits)
     {
-        AlignedSentence as = hit2AlignedSentence(hit);
+        AlignedSentence as = getAlignedSentence(hit);
 
         std::cout << hit.doc << " [" << (size_t)hit.start
                   << "," << (size_t)hit.length << "]" << std::endl;
 
-        std::cout << "Src: " << as.source << std::endl;
-        std::cout << "Trg: " << as.target << std::endl;
-        BOOST_FOREACH(AlignPoint a, as.alignment)
-        std::cout << (size_t)a.first << "-" << (size_t)a.second << " ";
+        std::cout << "Src: " << as.getSource() << std::endl;
+        std::cout << "Trg: " << as.getTarget() << std::endl;
+        BOOST_FOREACH(AlignPoint a, as.getAlignment())
+            std::cout << (size_t)a.first << "-" << (size_t)a.second << " ";
         std::cout << std::endl;
         if (m >= n)
             break;

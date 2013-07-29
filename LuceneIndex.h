@@ -9,6 +9,8 @@
 
 #include <lucene++/LuceneHeaders.h>
 
+#include "AlignedSentence.h"
+
 struct Hit
 {
     Hit(uint32_t doc, uint8_t start, uint8_t length)
@@ -18,28 +20,6 @@ struct Hit
     uint32_t doc;
     uint8_t start;
     uint8_t length;
-};
-
-typedef std::pair<uint8_t, uint8_t> AlignPoint;
-typedef std::vector<AlignPoint> Alignment;
-
-struct AlignedSentence
-{
-    AlignedSentence(const std::string& src,
-                    const std::string& trg,
-                    Alignment align)
-        : source(src), target(trg), alignment(align)
-    { }
-
-    AlignedSentence(const char* src,
-                    const char* trg,
-                    Alignment align)
-        : source(src), target(trg), alignment(align)
-    { }
-
-    std::string source;
-    std::string target;
-    Alignment alignment;
 };
 
 typedef std::vector<Hit> Hits;
@@ -55,7 +35,7 @@ public:
     ~LuceneIndex();
 
     HitsPtr getHits(const std::string&, bool = false);
-    AlignedSentence hit2AlignedSentence(const Hit&, bool = false);
+    AlignedSentence getAlignedSentence(const Hit&, bool = false);
 
     size_t printHits(const std::string&);
     void printHitsSentence(const std::string&);
