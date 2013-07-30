@@ -60,12 +60,12 @@ void AlignedSentence::ExtractTargetPhrase(TargetPhrases& targetPhrases,
     int maxTarget = -1;
     std::vector<uint8_t> usedTarget = m_numberAligned;
 
-    for(int sourcePos = start; sourcePos < start + length; sourcePos++)
+    for(size_t sourcePos = start; sourcePos < start + length; sourcePos++)
     {
         if (sourcePos >= m_alignment.size())
             continue;
 
-        for(int ind=0; ind < m_alignment[sourcePos].size(); ind++)
+        for(size_t ind=0; ind < m_alignment[sourcePos].size(); ind++)
         {
             int targetPos = m_alignment[sourcePos][ind];
             if (targetPos<minTarget)
@@ -76,7 +76,7 @@ void AlignedSentence::ExtractTargetPhrase(TargetPhrases& targetPhrases,
         }
     }
 
-    if (maxTarget >= 0 && maxTarget - minTarget < maxPhraseLength)
+    if (maxTarget >= 0 && maxTarget - minTarget < (int)maxPhraseLength)
     {
         bool out_of_bounds = false;
         for(int targetPos = minTarget; targetPos <= maxTarget
@@ -87,14 +87,14 @@ void AlignedSentence::ExtractTargetPhrase(TargetPhrases& targetPhrases,
         {
             for(int startTarget = minTarget;
                     (startTarget >= 0 &&
-                     startTarget > maxTarget-maxPhraseLength &&
-                     (startTarget==minTarget || m_numberAligned[startTarget]==0));
+                     startTarget > maxTarget - (int)maxPhraseLength &&
+                     (startTarget == minTarget || m_numberAligned[startTarget] == 0));
                     startTarget--)
             {
-                for (int endTarget=maxTarget;
-                        (endTarget<countTarget &&
-                         endTarget<startTarget+maxPhraseLength &&
-                         (endTarget==maxTarget || m_numberAligned[endTarget]==0));
+                for (int endTarget = maxTarget;
+                        (endTarget < countTarget &&
+                         endTarget < startTarget + (int)maxPhraseLength &&
+                         (endTarget == maxTarget || m_numberAligned[endTarget] == 0));
                         endTarget++)
                 {
                     TargetPhrase targetPhrase(shared_from_this(),

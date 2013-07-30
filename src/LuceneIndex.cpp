@@ -17,11 +17,13 @@
 #include "LuceneIndex.h"
 
 #define _U(x) Lucene::StringUtils::toUnicode(x)
+#define _U2(x, y) Lucene::StringUtils::toUnicode(x, y)
 #define _B(x) Lucene::StringUtils::toUTF8(x)
 
 using namespace Lucene;
 
 LuceneIndex::LuceneIndex(const std::string& directory, bool intoMemory)
+    : m_cache(new HitCache()), m_cacheInverse(new HitCache)
 {
     DirectoryPtr dir;
     if (intoMemory)
@@ -46,13 +48,24 @@ HitsPtr LuceneIndex::GetHits(const std::string& phrase, bool inverse)
     return GetHits(terms, 0, terms.size(), inverse);
 }
 
+HitsPtr LuceneIndex::GetHits(std::vector<re2::StringPiece> phraseTerms,
+                             bool inverse)
+{
+    std::vector<String> terms;
+    BOOST_FOREACH(re2::StringPiece term, phraseTerms)
+        terms.push_back(_U2((const uint8_t*)term.data(), term.length()));
+    return GetHits(terms, 0, terms.size(), inverse);
+}
+
 HitsPtr LuceneIndex::GetHits(std::vector<String>& phraseTerms,
                              size_t start,
                              size_t length,
                              bool inverse)
 {
     String phrase = PopulateCache(phraseTerms, start, length, inverse);
-    return m_cache[phrase];
+    if(inverse)
+        return (*m_cacheInverse)[phrase];
+    return (*m_cache)[phrase];
 }
 
 AlignedSentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
@@ -62,15 +75,9 @@ AlignedSentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
 
     std::string target;
     if(inverse)
-    {
-        //source = _B(doc->get(L"target")).c_str();
         target = _B(doc->get(L"source")).c_str();
-    }
     else
-    {
-        //source = _B(doc->get(L"source")).c_str();
         target = _B(doc->get(L"target")).c_str();
-    }
 
     DirectedAlignment alignment;
     int i = 0;
@@ -93,8 +100,6 @@ AlignedSentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
     return as->shared_from_this();
 }
 
-
-
 String LuceneIndex::PopulateCache(std::vector<String>& phraseTerms,
                                   size_t start,
                                   size_t length,
@@ -114,100 +119,40 @@ String LuceneIndex::PopulateCache(std::vector<String>& phraseTerms,
     if (length > 1)
         phrase = penultimo + _U(" ") + ultimo;
 
-    if (m_cache.count(phrase) == 0)
+    HitCachePtr cache = m_cache;
+    String field = L"source";
+    if(inverse) {
+        cache = m_cacheInverse;
+        field = L"target";
+    }
+    if (cache->count(phrase) == 0)
     {
-        if (m_cache.count(ultimo) == 0)
+        if (cache->count(ultimo) == 0)
         {
-            m_cache[ultimo] = HitsPtr(new Hits());
+            (*cache)[ultimo] = HitsPtr(new Hits());
             TermPositionsPtr tp = m_reader->termPositions(
-                                      newLucene<Term>(L"source", ultimo));
+                                      newLucene<Term>(field, ultimo));
             while (tp->next())
             {
                 int j = 0;
                 while (j++ < tp->freq())
-                    m_cache[ultimo]->push_back(
+                    (*cache)[ultimo]->push_back(
                         Hit(tp->doc(), tp->nextPosition(), 1));
             }
         }
         if (length > 1)
         {
-            if (m_cache.count(penultimo) == 0)
+            if (cache->count(penultimo) == 0)
                 PopulateCache(phraseTerms, start, length - 1, inverse);
 
-            m_cache[phrase] = HitsPtr(new Hits());
+            (*cache)[phrase] = HitsPtr(new Hits());
             PhraseJoinIntersection(
-                m_cache[penultimo]->begin(),
-                m_cache[penultimo]->end(),
-                m_cache[ultimo]->begin(),
-                m_cache[ultimo]->end(),
-                std::back_inserter(*m_cache[phrase]));
+                (*cache)[penultimo]->begin(),
+                (*cache)[penultimo]->end(),
+                (*cache)[ultimo]->begin(),
+                (*cache)[ultimo]->end(),
+                std::back_inserter(*(*cache)[phrase]));
         }
     }
     return phrase;
-}
-
-size_t LuceneIndex::PrintHits(std::vector<String>& phraseTerms,
-                              size_t start,
-                              size_t length)
-{
-    String phrase = PopulateCache(phraseTerms, start, length);
-
-    std::cout << "\"" << _B(phrase) << "\" : ";
-    size_t num = m_cache[phrase]->size();
-    std::cout << num << std::endl;
-
-    if (!num)
-        return num;
-
-    size_t n = 300;
-    HitsPtr hits = m_cache[phrase];
-    size_t m = 0;
-    BOOST_FOREACH (Hit hit, *hits)
-    {
-        AlignedSentencePtr as = GetAlignedSentence(hit);
-
-//        std::cout << hit.doc << " [" << (size_t)hit.start
-//                  << "," << (size_t)hit.length << "]" << std::endl;
-
-        //std::cout << "Src: " << as.getSource() << std::endl;
-        //std::cout << "Trg: " << as.GetTarget() << std::endl;
-//        for(size_t i = 0; i < as.GetAlignment().size(); ++i)
-//            BOOST_FOREACH(size_t j, as.GetAlignment()[i])
-//                std::cout << i << "-" << j << " ";
-//        std::cout << std::endl;
-        //as.ExtractTargetPhrase(hit.start, hit.length);
-        if (m >= n)
-            break;
-        m++;
-    }
-    std::cout << std::endl;
-    return num;
-}
-
-size_t LuceneIndex::PrintHits(const std::string& phrase)
-{
-    String wphrase(_U(phrase.c_str()));
-    std::vector<String> terms;
-    boost::split(terms, wphrase, boost::is_any_of(L"\t "));
-    return PrintHits(terms, 0, terms.size());
-}
-
-void LuceneIndex::PrintHitsSentence(const std::string& sentence)
-{
-    String wsentence(_U(sentence.c_str()));
-    std::vector<String> terms;
-    boost::split(terms, wsentence, boost::is_any_of(L"\t "));
-
-    if(terms.empty())
-        return;
-
-    for (size_t i = 0; i < terms.size(); i++)
-    {
-        for (size_t l = 1; l <= terms.size() && i + l <= terms.size(); l++)
-        {
-            if (!PrintHits(terms, i, l))
-                break;
-        }
-    }
-    std::cout << std::endl;
 }

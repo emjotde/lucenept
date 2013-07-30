@@ -40,9 +40,9 @@ OBJDIR_RELEASE = obj/Release
 DEP_RELEASE = 
 OUT_RELEASE = bin/Release/LucenePT
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/src/LuceneIndex.o $(OBJDIR_DEBUG)/src/LucenePT.o $(OBJDIR_DEBUG)/src/query.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/src/AlignedSentence.o $(OBJDIR_DEBUG)/src/LuceneIndex.o $(OBJDIR_DEBUG)/src/LucenePT.o $(OBJDIR_DEBUG)/src/query.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/src/LuceneIndex.o $(OBJDIR_RELEASE)/src/LucenePT.o $(OBJDIR_RELEASE)/src/query.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/src/AlignedSentence.o $(OBJDIR_RELEASE)/src/LuceneIndex.o $(OBJDIR_RELEASE)/src/LucenePT.o $(OBJDIR_RELEASE)/src/query.o
 
 all: debug release
 
@@ -58,6 +58,9 @@ debug: before_debug out_debug after_debug
 
 out_debug: before_debug $(OBJ_DEBUG) $(DEP_DEBUG)
 	$(LD) $(LIBDIR_DEBUG) -o $(OUT_DEBUG) $(OBJ_DEBUG)  $(LDFLAGS_DEBUG) $(LIB_DEBUG)
+
+$(OBJDIR_DEBUG)/src/AlignedSentence.o: src/AlignedSentence.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/AlignedSentence.cpp -o $(OBJDIR_DEBUG)/src/AlignedSentence.o
 
 $(OBJDIR_DEBUG)/src/LuceneIndex.o: src/LuceneIndex.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/LuceneIndex.cpp -o $(OBJDIR_DEBUG)/src/LuceneIndex.o
@@ -83,6 +86,9 @@ release: before_release out_release after_release
 
 out_release: before_release $(OBJ_RELEASE) $(DEP_RELEASE)
 	$(LD) $(LIBDIR_RELEASE) -o $(OUT_RELEASE) $(OBJ_RELEASE)  $(LDFLAGS_RELEASE) $(LIB_RELEASE)
+
+$(OBJDIR_RELEASE)/src/AlignedSentence.o: src/AlignedSentence.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/AlignedSentence.cpp -o $(OBJDIR_RELEASE)/src/AlignedSentence.o
 
 $(OBJDIR_RELEASE)/src/LuceneIndex.o: src/LuceneIndex.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/LuceneIndex.cpp -o $(OBJDIR_RELEASE)/src/LuceneIndex.o

@@ -9,6 +9,7 @@
 
 #include <lucene++/LuceneHeaders.h>
 
+#include "stringpiece.h"
 #include "AlignedSentence.h"
 
 struct Hit
@@ -29,20 +30,18 @@ class LuceneIndex
 {
 private:
     typedef boost::unordered_map<Lucene::String, HitsPtr> HitCache;
+    typedef boost::shared_ptr<HitCache> HitCachePtr;
 
 public:
     LuceneIndex(const std::string&, bool = false);
     ~LuceneIndex();
 
     HitsPtr GetHits(const std::string&, bool = false);
+    HitsPtr GetHits(std::vector<re2::StringPiece>, bool = false);
     AlignedSentencePtr GetAlignedSentence(const Hit&, bool = false);
-
-    size_t PrintHits(const std::string&);
-    void PrintHitsSentence(const std::string&);
 
 private:
     HitsPtr GetHits(std::vector<Lucene::String>&, size_t, size_t, bool = false);
-    size_t PrintHits(std::vector<Lucene::String>&, size_t, size_t);
 
     Lucene::String PopulateCache(std::vector<Lucene::String>&,
                                  size_t, size_t, bool = false);
@@ -83,7 +82,8 @@ private:
     }
 
     Lucene::IndexReaderPtr m_reader;
-    HitCache m_cache;
+    HitCachePtr m_cache;
+    HitCachePtr m_cacheInverse;
 };
 
 #endif

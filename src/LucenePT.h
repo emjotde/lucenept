@@ -11,12 +11,17 @@ class LucenePT
 {
 public:
     LucenePT(const std::string&, bool = false);
-    void createPhrase(const std::string&, size_t maxTargets = 20);
+    void createPhrase(const std::string&, bool inverse = false);
 
 private:
+    void countTargetPhrases(const std::string&,
+                            std::map<TargetPhrase, size_t>&, size_t&,
+                            bool = false);
+
     template <class Iterator>
-    HitsPtr TopNSampling(Iterator begin, Iterator end, size_t k = 300)
+    HitsPtr TopNSampling(Iterator begin, Iterator end)
     {
+        int k = m_maxSamples;
         if(std::distance(begin, end) <= k)
             return HitsPtr(new Hits(begin, end));
 
@@ -25,14 +30,15 @@ private:
     }
 
     template <class Iterator>
-    HitsPtr randomSampling(Iterator begin, Iterator end, size_t k = 300)
+    HitsPtr randomSampling(Iterator begin, Iterator end)
     {
         // Reservoir Sampling
-        HitsPtr sample = TopNSampling(begin, end, k);
-        for(size_t i = k; i < std::distance(begin, end); i++)
+        int k = m_maxSamples;
+        HitsPtr sample = TopNSampling(begin, end);
+        for(int i = k; i < std::distance(begin, end); i++)
         {
             boost::random::uniform_int_distribution<> dist(0, i - 1);
-            size_t j = dist(m_gen);
+            int j = dist(m_gen);
             if(j <= k)
                 (*sample)[j] = *(begin + i);
         }
@@ -40,8 +46,9 @@ private:
     }
 
     size_t m_maxSamples;
+    size_t m_maxTargetPhrases;
     boost::random::mt19937 m_gen;
-    boost::shared_ptr<LuceneIndex> index_;
+    boost::shared_ptr<LuceneIndex> m_index;
 };
 
 #endif // LUCENEPT_HDR

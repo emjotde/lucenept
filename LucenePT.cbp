@@ -39,6 +39,7 @@
 			<Add library="lucene++" />
 			<Add library="pthread" />
 		</Linker>
+		<Unit filename="src/AlignedSentence.cpp" />
 		<Unit filename="src/AlignedSentence.h" />
 		<Unit filename="src/LuceneIndex.cpp" />
 		<Unit filename="src/LuceneIndex.h" />
