@@ -4,7 +4,7 @@
 #include <boost/range/adaptors.hpp>
 
 LucenePT::LucenePT(const std::string& dir, bool intoMemory)
-    : m_maxSamples(300), m_maxTargetPhrases(10),
+    : m_maxSamples(300), m_maxTargetPhrases(10), m_maxPhraseLength(7),
     m_index(new LuceneIndex(dir, intoMemory))
 { }
 
@@ -24,7 +24,8 @@ void LucenePT::CountTargetPhrases(const PhrasePtr& phrase,
 
         SentencePtr as = m_index->GetAlignedSentence(hit, inverse);
         boost::static_pointer_cast<AlignedTargetSentence>(as)
-            ->ExtractTargetPhrase(targetPhrases, hit.start, hit.length);
+            ->ExtractTargetPhrase(targetPhrases, hit.start, hit.length,
+                                  m_maxPhraseLength);
 
         totalCount += targetPhrases.size();
 
@@ -41,6 +42,8 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
     // Convert phrase string into Phrase with an associated sentence
     // (the same phrase)
     PhrasePtr inputPhrase = SentencePtr(new Sentence(phraseString))->AsPhrase();
+    if(inputPhrase->GetLength() > m_maxPhraseLength)
+        return;
 
     // Collect counts for translation candidates and total count
     CountTargetPhrases(inputPhrase, phraseCounts, totalCount, inverse);

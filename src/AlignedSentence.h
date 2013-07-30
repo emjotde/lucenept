@@ -60,6 +60,8 @@ class Phrase
 public:
     Phrase(SentencePtr parentSentence, size_t, size_t);
     std::string ToString() const;
+    size_t GetStart() const;
+    size_t GetLength() const;
     const std::vector<StringPiece> GetTokens();
     bool operator<(const Phrase& rhs) const;
 

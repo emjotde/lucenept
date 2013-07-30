@@ -90,6 +90,14 @@ const std::vector<StringPiece> Phrase::GetTokens() {
     return tokens;
 }
 
+size_t Phrase::GetStart() const {
+    return m_start;
+}
+
+size_t Phrase::GetLength() const {
+    return m_length;
+}
+
 std::string Phrase::ToString() const
 {
     std::stringstream ss;
