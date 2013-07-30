@@ -40,6 +40,10 @@ LuceneIndex::~LuceneIndex()
     m_reader->close();
 }
 
+size_t LuceneIndex::Size() {
+    return m_reader->numDocs();
+}
+
 HitsPtr LuceneIndex::GetHits(const std::string& phrase, bool inverse)
 {
     String wphrase(_U(phrase.c_str()));

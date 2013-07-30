@@ -9,6 +9,8 @@
 
 #include "AlignedSentence.h"
 
+extern double fisher_exact(int, int, int, int);
+
 class LuceneIndex;
 
 class LucenePT

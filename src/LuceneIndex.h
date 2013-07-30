@@ -25,6 +25,7 @@ public:
     HitsPtr GetHits(const PhrasePtr&, bool = false);
     HitsPtr GetHits(const std::vector<StringPiece>&, bool = false);
     SentencePtr GetAlignedSentence(const Hit&, bool = false);
+    size_t Size();
 
 private:
     HitsPtr GetHits(const std::vector<Lucene::String>&, size_t, size_t, bool = false);

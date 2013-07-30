@@ -3,6 +3,38 @@
 #include <boost/foreach.hpp>
 #include <boost/range/adaptors.hpp>
 
+// 2x2 (one-sided) Fisher's exact test
+// see B. Moore. (2004) On Log Likelihood and the Significance of Rare Events
+double fisher_exact(int cfe, int ce, int cf, int num)
+{
+    assert(cfe <= ce);
+    assert(cfe <= cf);
+
+    int a = cfe;
+    int b = (cf - cfe);
+    int c = (ce - cfe);
+    int d = (num - ce - cf + cfe);
+    int n = a + b + c + d;
+
+    double cp = exp(lgamma(1+a+c) + lgamma(1+b+d) + lgamma(1+a+b)
+        + lgamma(1+c+d) - lgamma(1+n) - lgamma(1+a) - lgamma(1+b)
+        - lgamma(1+c) - lgamma(1+d));
+    double total_p = 0.0;
+    int tc = std::min(b,c);
+    for (int i = 0; i <= tc; i++)
+    {
+        total_p += cp;
+        double coef = (double)(b)*(double)(c) / (double)(a+1) / (double)(d+1);
+        cp *= coef;
+        ++a;
+        --c;
+        ++d;
+        --b;
+    }
+    return total_p;
+}
+
+
 LucenePT::LucenePT(const std::string& dir, bool intoMemory)
     : m_maxSamples(300), m_maxTargetPhrases(10), m_maxPhraseLength(7),
     m_index(new LuceneIndex(dir, intoMemory))
@@ -48,7 +80,13 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
     // Collect counts for translation candidates and total count
     CountTargetPhrases(inputPhrase, phraseCounts, totalCount, inverse);
 
-    typedef std::vector<float> Scores;
+    typedef std::vector<double> Scores;
+
+    HitsPtr srcHits = m_index->GetHits(inputPhrase, inverse);
+    std::vector<int> srcIds;
+    BOOST_FOREACH(Hit h, *srcHits)
+        if(srcIds.empty() || srcIds.back() != h.doc)
+            srcIds.push_back(h.doc);
 
     // Calculate scores from counts
     std::multimap<Scores, PhrasePtr> scoreMap;
@@ -57,8 +95,28 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
     {
         Scores scores;
 
+        HitsPtr trgHits = m_index->GetHits(tp, !inverse);
+        std::vector<int> trgIds;
+        BOOST_FOREACH(Hit h, *trgHits)
+            if(trgIds.empty() || trgIds.back() != h.doc)
+                trgIds.push_back(h.doc);
+
+        std::vector<int> commonIds;
+        std::set_intersection(srcIds.begin(), srcIds.end(), trgIds.begin(),
+                              trgIds.end(), std::back_inserter(commonIds));
+
+        int cfe = commonIds.size();
+        int cf = srcIds.size();
+        int ce = trgIds.size();
+        int N = m_index->Size();
+
+        double pv = -log(fisher_exact(cfe, cf, ce, N));
+
+        //if(pv < 20)
+        //    continue;
+
         //*************************************************************
-        // Directed phrase probability P(e|f)
+        // Directed phrase probability rowP(e|f)
         float pef = (float)phraseCounts[tp] / totalCount;
 
         // Inverted phrase probability P(f|e) - costly to calculate
@@ -76,6 +134,13 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
         scores.push_back(pef);
         scores.push_back(pfe);
         scores.push_back(pen);
+
+        scores.push_back(cfe);
+        scores.push_back(cf);
+        scores.push_back(ce);
+        scores.push_back(N);
+        scores.push_back(pv);
+
         //*************************************************************
 
         scoreMap.insert(std::make_pair(scores, tp));
