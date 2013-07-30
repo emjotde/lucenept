@@ -40,7 +40,7 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
     std::map<PhrasePtr, size_t> phraseCounts;
 
     // Convert phrase string into Phrase with an associated sentence
-    // (the same phrase)
+    // (actually the same phrase)
     PhrasePtr inputPhrase = SentencePtr(new Sentence(phraseString))->AsPhrase();
     if(inputPhrase->GetLength() > m_maxPhraseLength)
         return;
