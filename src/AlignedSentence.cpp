@@ -2,56 +2,180 @@
 
 #include <sstream>
 
-
-TargetPhrase::TargetPhrase(AlignedSentencePtr parentSentence, PhraseSpan phraseSpan)
-    : m_parentSentence(parentSentence), m_phraseSpan(phraseSpan)
-{ }
-
-std::string TargetPhrase::ToString() const
+bool operator <(const PhrasePtr& lhs, const PhrasePtr& rhs)
 {
-    std::stringstream ss;
-    for(size_t i = m_phraseSpan.first;
-            i < m_phraseSpan.first + m_phraseSpan.second; i++)
-    {
-        if(i > m_phraseSpan.first)
-            ss << " ";
-        ss << m_parentSentence->m_targetTokens[i].as_string();
-    }
-    return ss.str();
+    return *lhs < *rhs;
 }
 
-bool TargetPhrase::operator<(const TargetPhrase& rhs) const
-{
-    std::vector<re2::StringPiece>::iterator
-    begin1 = m_parentSentence->m_targetTokens.begin()
-             + m_phraseSpan.first,
-    end1 = m_parentSentence->m_targetTokens.begin()
-           + m_phraseSpan.first + m_phraseSpan.second,
-    begin2 = rhs.m_parentSentence->m_targetTokens.begin()
-             + rhs.m_phraseSpan.first,
-    end2 = rhs.m_parentSentence->m_targetTokens.begin()
-           + rhs.m_phraseSpan.first
-           + rhs.m_phraseSpan.second;
-
-    return lexicographical_compare(begin1, end1, begin2, end2);
-}
-
-AlignedSentence::AlignedSentence(const std::string& trg,
-                                 const DirectedAlignment& align)
-    : m_target(trg), m_alignment(align)
+Sentence::Sentence(const std::string& trg)
+    : m_sentenceString(trg)
 {
     Init();
 }
 
-AlignedSentence::AlignedSentence(const char* trg,
+Sentence::Sentence(const char* trg)
+    : m_sentenceString(trg)
+{
+    Init();
+}
+
+const PhrasePtr Sentence::GetPhrase(size_t start, size_t length)
+{
+    return PhrasePtr(new Phrase(shared_from_this(), start, length));
+}
+
+const PhrasePtr Sentence::AsPhrase()
+{
+    return PhrasePtr(
+        new Phrase(shared_from_this(), 0, m_sentenceTokens.size()));
+}
+
+void Sentence::Init()
+{
+    Tokenize(m_sentenceString, m_sentenceTokens);
+}
+
+const std::string& Sentence::GetString() const
+{
+    return m_sentenceString;
+}
+
+const std::vector<StringPiece>& Sentence::GetTokens() const
+{
+    return m_sentenceTokens;
+}
+
+const StringPiece& Sentence::GetToken(size_t i) const
+{
+    return m_sentenceTokens[i];
+}
+
+const std::string Sentence::GetTokenString(size_t i) const
+{
+    return m_sentenceTokens[i].as_string();
+}
+
+void Sentence::Tokenize(StringPiece str,
+                        std::vector<StringPiece>& out)
+{
+    const char* seps = " \t";
+    StringPiece suffix = str;
+    size_t len = suffix.length();
+    size_t span;
+    while((span = strcspn(suffix.data(), seps)) != len)
+    {
+        out.push_back(StringPiece(suffix.data(), span));
+        size_t skip = 0;
+        char* ptr = (char*)suffix.data() + span;
+        while(strpbrk(ptr, seps) == ptr)
+        {
+            ptr++;
+            skip++;
+        }
+        len = len - span - skip;
+        suffix = StringPiece(suffix.data() + span + skip, len);
+    }
+    if(len)
+        out.push_back(suffix);
+}
+
+Phrase::Phrase(SentencePtr parentSentence, size_t start, size_t length)
+    : m_parentSentence(parentSentence), m_start(start), m_length(length)
+{ }
+
+const std::vector<StringPiece> Phrase::GetTokens() {
+    std::vector<StringPiece> tokens;
+    for(size_t i = m_start; i < m_start + m_length; ++i)
+        tokens.push_back(m_parentSentence->GetToken(i));
+    return tokens;
+}
+
+std::string Phrase::ToString() const
+{
+    std::stringstream ss;
+    for(size_t i = m_start;
+            i < m_start + m_length; i++)
+    {
+        if(i > m_start)
+            ss << " ";
+        ss << m_parentSentence->GetTokenString(i);
+    }
+    return ss.str();
+}
+
+bool Phrase::operator<(const Phrase& rhs) const
+{
+    std::vector<StringPiece>::const_iterator
+    begin1 = m_parentSentence->GetTokens().begin()
+             + m_start,
+    end1 = m_parentSentence->GetTokens().begin()
+           + m_start + m_length,
+    begin2 = rhs.m_parentSentence->GetTokens().begin()
+             + rhs.m_start,
+    end2 = rhs.m_parentSentence->GetTokens().begin()
+           + rhs.m_start + rhs.m_length;
+
+    return lexicographical_compare(begin1, end1, begin2, end2);
+}
+
+TargetPhrase::TargetPhrase(SentencePtr parentSentence, size_t start,
+                          size_t length, size_t sourceStart, size_t sourceLength)
+    : Phrase(parentSentence, start, length), m_sourceStart(sourceStart),
+    m_sourceLength(sourceLength)
+{ }
+
+const DirectedAlignment TargetPhrase::GetAlignment() const {
+    const DirectedAlignment& sentenceAlign
+        = boost::shared_static_cast<AlignedTargetSentence>(m_parentSentence)
+            ->GetAlignment();
+
+    DirectedAlignment align;
+    for(size_t i = m_sourceStart; i < m_sourceStart + m_sourceLength; ++i) {
+        BOOST_FOREACH(size_t j, sentenceAlign[i]) {
+            if(m_start <= j && j < m_start + m_length) {
+                size_t a = i - m_sourceStart; // - ?
+                size_t b = j - m_start;
+
+                if(align.size() <= a)
+                    align.resize(a + 1);
+                align[a].push_back(b);
+            }
+        }
+    }
+    return align;
+}
+
+const std::string TargetPhrase::GetAlignmentString() const {
+    const DirectedAlignment align = GetAlignment();
+    std::stringstream ss;
+    bool first = true;
+    for(size_t i = 0; i < align.size(); ++i) {
+        BOOST_FOREACH(size_t j, align[i]) {
+            if(!first)
+                ss << " ";
+            ss << i << "-" << j;
+            first = false;
+        }
+    }
+    return ss.str();
+}
+
+AlignedTargetSentence::AlignedTargetSentence(const std::string& trg,
                                  const DirectedAlignment& align)
-    : m_target(trg), m_alignment(align)
+    : Sentence(trg), m_alignment(align)
+{
+    Init();
+}
+
+AlignedTargetSentence::AlignedTargetSentence(const char* trg,
+                                 const DirectedAlignment& align)
+    : Sentence(trg), m_alignment(align)
 {
     Init();
 }
 
 // adapted from BilingualDynSuffixArray
-void AlignedSentence::ExtractTargetPhrase(TargetPhrases& targetPhrases,
+void AlignedTargetSentence::ExtractTargetPhrase(TargetPhrases& targetPhrases,
         size_t start, size_t length, size_t maxPhraseLength)
 {
     int countTarget = m_numberAligned.size();
@@ -97,9 +221,13 @@ void AlignedSentence::ExtractTargetPhrase(TargetPhrases& targetPhrases,
                          (endTarget == maxTarget || m_numberAligned[endTarget] == 0));
                         endTarget++)
                 {
-                    TargetPhrase targetPhrase(shared_from_this(),
-                                              PhraseSpan(startTarget,
-                                              endTarget - startTarget + 1));
+                    TargetPhrasePtr targetPhrase(
+                        new TargetPhrase(
+                            shared_from_this(),
+                            startTarget,
+                            endTarget - startTarget + 1,
+                            start,
+                            length));
                     targetPhrases.push_back(targetPhrase);
                 }
             }
@@ -107,50 +235,15 @@ void AlignedSentence::ExtractTargetPhrase(TargetPhrases& targetPhrases,
     }
 }
 
-const std::string& AlignedSentence::GetTarget() const
-{
-    return m_target;
-}
-
-const DirectedAlignment& AlignedSentence::GetAlignment() const
+const DirectedAlignment& AlignedTargetSentence::GetAlignment() const
 {
     return m_alignment;
 }
 
-const std::string AlignedSentence::GetTargetToken(size_t i) const
+void AlignedTargetSentence::Init()
 {
-    return m_targetTokens[i].as_string();
-}
-
-void AlignedSentence::Init()
-{
-    Tokenize(m_target, m_targetTokens);
-    m_numberAligned.resize(m_targetTokens.size(), 0);
-    BOOST_FOREACH(WordAlignment word, m_alignment)
-    BOOST_FOREACH(size_t b, word)
-    m_numberAligned[b]++;
-}
-
-void AlignedSentence::Tokenize(re2::StringPiece str,
-                               std::vector<re2::StringPiece>& out)
-{
-    const char* seps = " \t";
-    re2::StringPiece suffix = str;
-    size_t len = suffix.length();
-    size_t span;
-    while((span = strcspn(suffix.data(), seps)) != len)
-    {
-        out.push_back(re2::StringPiece(suffix.data(), span));
-        size_t skip = 0;
-        char* ptr = (char*)suffix.data() + span;
-        while(strpbrk(ptr, seps) == ptr)
-        {
-            ptr++;
-            skip++;
-        }
-        len = len - span - skip;
-        suffix = re2::StringPiece(suffix.data() + span + skip, len);
-    }
-    if(len)
-        out.push_back(suffix);
+    m_numberAligned.resize(m_sentenceTokens.size(), 0);
+    BOOST_FOREACH(SingleWordAlignment word, m_alignment)
+        BOOST_FOREACH(size_t b, word)
+            m_numberAligned[b]++;
 }

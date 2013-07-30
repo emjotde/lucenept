@@ -48,7 +48,13 @@ HitsPtr LuceneIndex::GetHits(const std::string& phrase, bool inverse)
     return GetHits(terms, 0, terms.size(), inverse);
 }
 
-HitsPtr LuceneIndex::GetHits(std::vector<re2::StringPiece> phraseTerms,
+HitsPtr LuceneIndex::GetHits(const PhrasePtr& phrase, bool inverse)
+{
+    const std::vector<StringPiece> tokens = phrase->GetTokens();
+    return GetHits(tokens, inverse);
+}
+
+HitsPtr LuceneIndex::GetHits(const std::vector<StringPiece>& phraseTerms,
                              bool inverse)
 {
     std::vector<String> terms;
@@ -57,7 +63,7 @@ HitsPtr LuceneIndex::GetHits(std::vector<re2::StringPiece> phraseTerms,
     return GetHits(terms, 0, terms.size(), inverse);
 }
 
-HitsPtr LuceneIndex::GetHits(std::vector<String>& phraseTerms,
+HitsPtr LuceneIndex::GetHits(const std::vector<String>& phraseTerms,
                              size_t start,
                              size_t length,
                              bool inverse)
@@ -68,7 +74,7 @@ HitsPtr LuceneIndex::GetHits(std::vector<String>& phraseTerms,
     return (*m_cache)[phrase];
 }
 
-AlignedSentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
+SentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
 {
     DocumentPtr doc = m_reader->document(hit.doc);
     ByteArray align = doc->getBinaryValue(L"alignment");
@@ -96,15 +102,14 @@ AlignedSentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
             alignment[a].push_back(b);
         }
     }
-    AlignedSentencePtr as(new AlignedSentence(target, alignment));
+    SentencePtr as(new AlignedTargetSentence(target, alignment));
     return as->shared_from_this();
 }
 
-String LuceneIndex::PopulateCache(std::vector<String>& phraseTerms,
+String LuceneIndex::PopulateCache(const std::vector<String>& phraseTerms,
                                   size_t start,
                                   size_t length,
                                   bool inverse)
-// TODO (marcinj#6#): Add implementation for inverse = true
 {
     String penultimo;
     for (size_t j = 0; j < length - 1; j++)

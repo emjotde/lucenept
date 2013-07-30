@@ -1,21 +1,25 @@
 #ifndef LUCENEPT_HDR
 #define LUCENEPT_HDR
 
-#include <boost/shared_ptr.hpp>
-#include "LuceneIndex.h"
+#include <map>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
+
+#include "AlignedSentence.h"
+
+class LuceneIndex;
 
 class LucenePT
 {
 public:
     LucenePT(const std::string&, bool = false);
-    void createPhrase(const std::string&, bool inverse = false);
+    void CreatePhrase(const std::string&, bool inverse = false);
 
 private:
-    void countTargetPhrases(const std::string&,
-                            std::map<TargetPhrase, size_t>&, size_t&,
+    void CountTargetPhrases(const PhrasePtr&,
+                            std::map<PhrasePtr, size_t>&, size_t&,
                             bool = false);
 
     template <class Iterator>
@@ -30,7 +34,7 @@ private:
     }
 
     template <class Iterator>
-    HitsPtr randomSampling(Iterator begin, Iterator end)
+    HitsPtr RandomSampling(Iterator begin, Iterator end)
     {
         // Reservoir Sampling
         int k = m_maxSamples;
@@ -47,8 +51,10 @@ private:
 
     size_t m_maxSamples;
     size_t m_maxTargetPhrases;
-    boost::random::mt19937 m_gen;
     boost::shared_ptr<LuceneIndex> m_index;
+
+    // Random number generator
+    boost::random::mt19937 m_gen;
 };
 
 #endif // LUCENEPT_HDR

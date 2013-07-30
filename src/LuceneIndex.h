@@ -9,22 +9,7 @@
 
 #include <lucene++/LuceneHeaders.h>
 
-#include "stringpiece.h"
 #include "AlignedSentence.h"
-
-struct Hit
-{
-    Hit(uint32_t doc, uint8_t start, uint8_t length)
-        : doc(doc), start(start), length(length)
-    { }
-
-    uint32_t doc;
-    uint8_t start;
-    uint8_t length;
-};
-
-typedef std::vector<Hit> Hits;
-typedef boost::shared_ptr<Hits> HitsPtr;
 
 class LuceneIndex
 {
@@ -37,13 +22,14 @@ public:
     ~LuceneIndex();
 
     HitsPtr GetHits(const std::string&, bool = false);
-    HitsPtr GetHits(std::vector<re2::StringPiece>, bool = false);
-    AlignedSentencePtr GetAlignedSentence(const Hit&, bool = false);
+    HitsPtr GetHits(const PhrasePtr&, bool = false);
+    HitsPtr GetHits(const std::vector<StringPiece>&, bool = false);
+    SentencePtr GetAlignedSentence(const Hit&, bool = false);
 
 private:
-    HitsPtr GetHits(std::vector<Lucene::String>&, size_t, size_t, bool = false);
+    HitsPtr GetHits(const std::vector<Lucene::String>&, size_t, size_t, bool = false);
 
-    Lucene::String PopulateCache(std::vector<Lucene::String>&,
+    Lucene::String PopulateCache(const std::vector<Lucene::String>&,
                                  size_t, size_t, bool = false);
 
     template <class InputIterator1,

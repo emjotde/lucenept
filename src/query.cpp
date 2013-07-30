@@ -9,9 +9,9 @@ int main(int argc, char** argv)
     std::string line;
     while (std::getline(std::cin, line))
     {
-        lucenePt.createPhrase(line, false);
-        //std::cout << "--" << std::endl;
-        //lucenePt.createPhrase(line, true);
+        lucenePt.CreatePhrase(line, false);
+        std::cout << "--" << std::endl;
+        lucenePt.CreatePhrase(line, true);
     }
 
     return 0;
