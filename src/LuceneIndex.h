@@ -34,23 +34,23 @@ public:
     LuceneIndex(const std::string&, bool = false);
     ~LuceneIndex();
 
-    HitsPtr getHits(const std::string&, bool = false);
-    AlignedSentence getAlignedSentence(const Hit&, bool = false);
+    HitsPtr GetHits(const std::string&, bool = false);
+    AlignedSentencePtr GetAlignedSentence(const Hit&, bool = false);
 
-    size_t printHits(const std::string&);
-    void printHitsSentence(const std::string&);
+    size_t PrintHits(const std::string&);
+    void PrintHitsSentence(const std::string&);
 
 private:
-    HitsPtr getHits(std::vector<Lucene::String>&, size_t, size_t, bool = false);
-    size_t printHits(std::vector<Lucene::String>&, size_t, size_t);
+    HitsPtr GetHits(std::vector<Lucene::String>&, size_t, size_t, bool = false);
+    size_t PrintHits(std::vector<Lucene::String>&, size_t, size_t);
 
-    Lucene::String populateCache(std::vector<Lucene::String>&,
+    Lucene::String PopulateCache(std::vector<Lucene::String>&,
                                  size_t, size_t, bool = false);
 
     template <class InputIterator1,
              class InputIterator2,
              class OutputIterator>
-    OutputIterator phrase_join_intersection(InputIterator1 first1,
+    OutputIterator PhraseJoinIntersection(InputIterator1 first1,
                                             InputIterator1 last1,
                                             InputIterator2 first2,
                                             InputIterator2 last2,
@@ -82,8 +82,8 @@ private:
         return result;
     }
 
-    Lucene::IndexReaderPtr reader_;
-    HitCache cache_;
+    Lucene::IndexReaderPtr m_reader;
+    HitCache m_cache;
 };
 
 #endif

@@ -1,104 +1,62 @@
 #ifndef ALIGNEDSENTENCE_HDR
 #define ALIGNEDSENTENCE_HDR
 
+#include <stdint.h>
 #include <cstring>
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <sstream>
 
+#include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include "stringpiece.h"
 
-typedef std::pair<uint8_t, uint8_t> AlignPoint;
-typedef std::vector<AlignPoint> Alignment;
+typedef std::vector<uint8_t> WordAlignment;
+typedef std::vector<WordAlignment> DirectedAlignment;
 
-class AlignedSentence
+class AlignedSentence;
+typedef boost::shared_ptr<AlignedSentence> AlignedSentencePtr;
+typedef std::pair<uint8_t, uint8_t> PhraseSpan;
+
+class TargetPhrase
 {
 public:
-    AlignedSentence(const std::string& src,
-                    const std::string& trg,
-                    const Alignment& align)
-        : source(src), target(trg), alignment(align)
-    {
-        init();
-    }
-
-    AlignedSentence(const char* src,
-                    const char* trg,
-                    const Alignment& align)
-        : source(src), target(trg), alignment(align)
-    {
-        init();
-    }
-
-    const std::string& getSource() const
-    {
-        return source;
-    }
-
-    const std::string& getTarget() const
-    {
-        return target;
-    }
-
-    const Alignment& getAlignment() const
-    {
-        return alignment;
-    }
-
-    size_t getSourceLength() const
-    {
-        return sourceTokens.size();
-    }
-
-    size_t getTargetLength() const
-    {
-        return targetTokens.size();
-    }
-
-    const std::string getSourceToken(size_t i) const
-    {
-        return sourceTokens[i].as_string();
-    }
-
-    const std::string getTargetToken(size_t i) const
-    {
-        return targetTokens[i].as_string();
-    }
+    TargetPhrase(AlignedSentencePtr parentSentence, PhraseSpan phraseSpan);
+    std::string ToString() const;
+    bool operator<(const TargetPhrase& rhs) const;
 
 private:
-    void init()
-    {
-        tokenize(source, sourceTokens);
-        tokenize(target, targetTokens);
-    }
-
-    void tokenize(re2::StringPiece str, std::vector<re2::StringPiece>& out)
-    {
-        const char* seps = " \t";
-        re2::StringPiece suffix = str;
-        size_t len = suffix.length();
-        size_t span;
-        while((span = strcspn(suffix.data(), seps)) != len)
-        {
-            out.push_back(re2::StringPiece(suffix.data(), span));
-            size_t skip = 0;
-            char* ptr = (char*)suffix.data() + span;
-            while(strpbrk(ptr, seps) == ptr)
-            {
-                ptr++;
-                skip++;
-            }
-            len = len - span - skip;
-            suffix = re2::StringPiece(suffix.data() + span + skip, len);
-        }
-        if(len)
-            out.push_back(suffix);
-    }
-
-    const std::string source;
-    const std::string target;
-    std::vector<re2::StringPiece> sourceTokens;
-    std::vector<re2::StringPiece> targetTokens;
-    Alignment alignment;
+    AlignedSentencePtr m_parentSentence;
+    PhraseSpan m_phraseSpan;
 };
+
+typedef std::vector<TargetPhrase> TargetPhrases;
+
+class AlignedSentence : public boost::enable_shared_from_this<AlignedSentence>
+{
+    friend TargetPhrase;
+
+public:
+    AlignedSentence(const std::string&, const DirectedAlignment&);
+    AlignedSentence(const char*, const DirectedAlignment&);
+
+    // adapted from Moses::BilingualDynSuffixArray
+    void ExtractTargetPhrase(TargetPhrases&, size_t, size_t, size_t = 7);
+    const std::string& GetTarget() const;
+    const DirectedAlignment& GetAlignment() const;
+    const std::string GetTargetToken(size_t) const;
+
+private:
+    void Init();
+    void Tokenize(re2::StringPiece, std::vector<re2::StringPiece>&);
+
+    const std::string m_target;
+    std::vector<re2::StringPiece> m_targetTokens;
+    DirectedAlignment m_alignment;
+    std::vector<uint8_t> m_numberAligned;
+};
+
 
 #endif // ALIGNEDSENTENCE_HDR
