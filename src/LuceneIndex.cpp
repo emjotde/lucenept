@@ -62,7 +62,7 @@ HitsPtr LuceneIndex::GetHits(const std::vector<StringPiece>& phraseTerms,
                              bool inverse)
 {
     std::vector<String> terms;
-    BOOST_FOREACH(re2::StringPiece term, phraseTerms)
+    BOOST_FOREACH(StringPiece term, phraseTerms)
         terms.push_back(_U2((const uint8_t*)term.data(), term.length()));
     return GetHits(terms, 0, terms.size(), inverse);
 }

@@ -3,40 +3,8 @@
 #include <boost/foreach.hpp>
 #include <boost/range/adaptors.hpp>
 
-// 2x2 (one-sided) Fisher's exact test
-// see B. Moore. (2004) On Log Likelihood and the Significance of Rare Events
-double fisher_exact(int cfe, int ce, int cf, int num)
-{
-    assert(cfe <= ce);
-    assert(cfe <= cf);
-
-    int a = cfe;
-    int b = (cf - cfe);
-    int c = (ce - cfe);
-    int d = (num - ce - cf + cfe);
-    int n = a + b + c + d;
-
-    double cp = exp(lgamma(1+a+c) + lgamma(1+b+d) + lgamma(1+a+b)
-        + lgamma(1+c+d) - lgamma(1+n) - lgamma(1+a) - lgamma(1+b)
-        - lgamma(1+c) - lgamma(1+d));
-    double total_p = 0.0;
-    int tc = std::min(b,c);
-    for (int i = 0; i <= tc; i++)
-    {
-        total_p += cp;
-        double coef = (double)(b)*(double)(c) / (double)(a+1) / (double)(d+1);
-        cp *= coef;
-        ++a;
-        --c;
-        ++d;
-        --b;
-    }
-    return total_p;
-}
-
-
 LucenePT::LucenePT(const std::string& dir, bool intoMemory)
-    : m_maxSamples(300), m_maxTargetPhrases(10), m_maxPhraseLength(7),
+    : m_maxSamples(20), m_maxTargetPhrases(20), m_maxPhraseLength(7),
     m_index(new LuceneIndex(dir, intoMemory))
 { }
 
@@ -66,14 +34,42 @@ void LucenePT::CountTargetPhrases(const PhrasePtr& phrase,
     }
 }
 
+std::set<PhrasePtr> skip;
+
+void LucenePT::AllPhrases(const std::string& sentenceString, bool inverse)
+{
+    SentencePtr sentence(new Sentence(sentenceString));
+    for(size_t start = 0; start < sentence->Size(); ++start)
+    {
+        for(size_t length = 1; length < m_maxPhraseLength
+            && start + length <= sentence->Size(); ++length)
+        {
+            PhrasePtr phrase = sentence->GetPhrase(start, length);
+            std::cout << phrase->ToString() << std::endl;
+            if(skip.count(phrase) == 0) {
+                CreatePhrase(phrase, inverse);
+                skip.insert(phrase);
+            }
+            else {
+                std::cout << "Skipped" << std::endl;
+            }
+        }
+    }
+}
+
 void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
+{
+    // Convert phrase string into Phrase with an associated sentence
+    // (actually the same phrase)
+    PhrasePtr inputPhrase = SentencePtr(new Sentence(phraseString))->AsPhrase();
+    CreatePhrase(inputPhrase, inverse);
+}
+
+void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
 {
     size_t totalCount = 0;
     std::map<PhrasePtr, size_t> phraseCounts;
 
-    // Convert phrase string into Phrase with an associated sentence
-    // (actually the same phrase)
-    PhrasePtr inputPhrase = SentencePtr(new Sentence(phraseString))->AsPhrase();
     if(inputPhrase->GetLength() > m_maxPhraseLength)
         return;
 
@@ -82,11 +78,11 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
 
     typedef std::vector<double> Scores;
 
-    HitsPtr srcHits = m_index->GetHits(inputPhrase, inverse);
-    std::vector<int> srcIds;
-    BOOST_FOREACH(Hit h, *srcHits)
-        if(srcIds.empty() || srcIds.back() != h.doc)
-            srcIds.push_back(h.doc);
+//    HitsPtr srcHits = m_index->GetHits(inputPhrase, inverse);
+//    std::vector<int> srcIds;
+//    BOOST_FOREACH(Hit h, *srcHits)
+//        if(srcIds.empty() || srcIds.back() != h.doc)
+//            srcIds.push_back(h.doc);
 
     // Calculate scores from counts
     std::multimap<Scores, PhrasePtr> scoreMap;
@@ -95,22 +91,22 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
     {
         Scores scores;
 
-        HitsPtr trgHits = m_index->GetHits(tp, !inverse);
-        std::vector<int> trgIds;
-        BOOST_FOREACH(Hit h, *trgHits)
-            if(trgIds.empty() || trgIds.back() != h.doc)
-                trgIds.push_back(h.doc);
-
-        std::vector<int> commonIds;
-        std::set_intersection(srcIds.begin(), srcIds.end(), trgIds.begin(),
-                              trgIds.end(), std::back_inserter(commonIds));
-
-        int cfe = commonIds.size();
-        int cf = srcIds.size();
-        int ce = trgIds.size();
-        int N = m_index->Size();
-
-        double pv = -log(fisher_exact(cfe, cf, ce, N));
+//        HitsPtr trgHits = m_index->GetHits(tp, !inverse);
+//        std::vector<int> trgIds;
+//        BOOST_FOREACH(Hit h, *trgHits)
+//            if(trgIds.empty() || trgIds.back() != h.doc)
+//                trgIds.push_back(h.doc);
+//
+//        std::vector<int> commonIds;
+//        std::set_intersection(srcIds.begin(), srcIds.end(), trgIds.begin(),
+//                              trgIds.end(), std::back_inserter(commonIds));
+//
+//        int cfe = commonIds.size();
+//        int cf = srcIds.size();
+//        int ce = trgIds.size();
+//        int N = m_index->Size();
+//
+//        double pv = -log(fisher_exact(cfe, cf, ce, N));
 
         //if(pv < 20)
         //    continue;
@@ -135,11 +131,11 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
         scores.push_back(pfe);
         scores.push_back(pen);
 
-        scores.push_back(cfe);
-        scores.push_back(cf);
-        scores.push_back(ce);
-        scores.push_back(N);
-        scores.push_back(pv);
+//        scores.push_back(cfe);
+//        scores.push_back(cf);
+//        scores.push_back(ce);
+//        scores.push_back(N);
+//        scores.push_back(pv);
 
         //*************************************************************
 
@@ -150,7 +146,7 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
     std::multimap<Scores, PhrasePtr>::const_reverse_iterator revIt;
     for(revIt = scoreMap.rbegin(); revIt != scoreMap.rend(); revIt++)
     {
-        std::cout << phraseString << " ||| "
+        std::cout << inputPhrase->ToString() << " ||| "
             << revIt->second->ToString() << " |||";
         BOOST_FOREACH(float score, revIt->first)
             std::cout << " " << score;
@@ -162,4 +158,35 @@ void LucenePT::CreatePhrase(const std::string& phraseString, bool inverse)
         if(targetsCount++ >= m_maxTargetPhrases)
             break;
     }
+}
+
+// 2x2 (one-sided) Fisher's exact test
+// see B. Moore. (2004) On Log Likelihood and the Significance of Rare Events
+double fisher_exact(int cfe, int ce, int cf, int num)
+{
+    assert(cfe <= ce);
+    assert(cfe <= cf);
+
+    int a = cfe;
+    int b = (cf - cfe);
+    int c = (ce - cfe);
+    int d = (num - ce - cf + cfe);
+    int n = a + b + c + d;
+
+    double cp = exp(lgamma(1+a+c) + lgamma(1+b+d) + lgamma(1+a+b)
+        + lgamma(1+c+d) - lgamma(1+n) - lgamma(1+a) - lgamma(1+b)
+        - lgamma(1+c) - lgamma(1+d));
+    double total_p = 0.0;
+    int tc = std::min(b,c);
+    for (int i = 0; i <= tc; i++)
+    {
+        total_p += cp;
+        double coef = (double)(b)*(double)(c) / (double)(a+1) / (double)(d+1);
+        cp *= coef;
+        ++a;
+        --c;
+        ++d;
+        --b;
+    }
+    return total_p;
 }

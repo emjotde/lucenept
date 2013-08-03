@@ -13,7 +13,9 @@
 #include <boost/enable_shared_from_this.hpp>
 #include "stringpiece.h"
 
+typedef std::string StringContainer;
 typedef re2::StringPiece StringPiece;
+typedef std::stringstream StringStream;
 
 struct Hit
 {
@@ -34,13 +36,14 @@ typedef boost::shared_ptr<Phrase> PhrasePtr;
 
 class Sentence : public boost::enable_shared_from_this<Sentence> {
 public:
-    Sentence(const std::string&);
+    Sentence(const StringContainer&);
     Sentence(const char*);
 
-    const std::string& GetString() const;
+    const StringContainer& GetString() const;
     const std::vector<StringPiece>& GetTokens() const;
     const StringPiece& GetToken(size_t) const;
-    const std::string GetTokenString(size_t) const;
+    const StringContainer GetTokenString(size_t) const;
+    size_t Size();
 
     const PhrasePtr GetPhrase(size_t, size_t);
     const PhrasePtr AsPhrase();
@@ -49,7 +52,7 @@ protected:
     virtual void Init();
     void Tokenize(StringPiece, std::vector<StringPiece>&);
 
-    const std::string m_sentenceString;
+    const StringContainer m_sentenceString;
     std::vector<StringPiece> m_sentenceTokens;
 };
 
@@ -69,6 +72,7 @@ protected:
     SentencePtr m_parentSentence;
     size_t m_start;
     size_t m_length;
+    StringPiece m_string;
 };
 
 bool operator <(const PhrasePtr&, const PhrasePtr&);
@@ -81,7 +85,7 @@ public:
     TargetPhrase(SentencePtr parentSentence, size_t, size_t, size_t, size_t);
 
     const DirectedAlignment GetAlignment() const;
-    const std::string GetAlignmentString() const;
+    const StringContainer GetAlignmentString() const;
 
 private:
     size_t m_sourceStart;
@@ -94,7 +98,7 @@ typedef std::vector<TargetPhrasePtr> TargetPhrases;
 class AlignedTargetSentence : public Sentence
 {
 public:
-    AlignedTargetSentence(const std::string&, const DirectedAlignment&);
+    AlignedTargetSentence(const StringContainer&, const DirectedAlignment&);
     AlignedTargetSentence(const char*, const DirectedAlignment&);
 
     // adapted from Moses::BilingualDynSuffixArray

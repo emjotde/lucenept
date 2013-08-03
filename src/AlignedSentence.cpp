@@ -7,7 +7,7 @@ bool operator <(const PhrasePtr& lhs, const PhrasePtr& rhs)
     return *lhs < *rhs;
 }
 
-Sentence::Sentence(const std::string& trg)
+Sentence::Sentence(const StringContainer& trg)
     : m_sentenceString(trg)
 {
     Init();
@@ -17,6 +17,11 @@ Sentence::Sentence(const char* trg)
     : m_sentenceString(trg)
 {
     Init();
+}
+
+size_t Sentence::Size()
+{
+    return m_sentenceTokens.size();
 }
 
 const PhrasePtr Sentence::GetPhrase(size_t start, size_t length)
@@ -35,7 +40,7 @@ void Sentence::Init()
     Tokenize(m_sentenceString, m_sentenceTokens);
 }
 
-const std::string& Sentence::GetString() const
+const StringContainer& Sentence::GetString() const
 {
     return m_sentenceString;
 }
@@ -50,7 +55,7 @@ const StringPiece& Sentence::GetToken(size_t i) const
     return m_sentenceTokens[i];
 }
 
-const std::string Sentence::GetTokenString(size_t i) const
+const StringContainer Sentence::GetTokenString(size_t i) const
 {
     return m_sentenceTokens[i].as_string();
 }
@@ -81,7 +86,11 @@ void Sentence::Tokenize(StringPiece str,
 
 Phrase::Phrase(SentencePtr parentSentence, size_t start, size_t length)
     : m_parentSentence(parentSentence), m_start(start), m_length(length)
-{ }
+{
+    const char* data  = m_parentSentence->GetToken(start).data();
+    const char* dataEnd = m_parentSentence->GetToken(start + length - 1).end();
+    m_string = StringPiece(data, dataEnd - data);
+}
 
 const std::vector<StringPiece> Phrase::GetTokens() {
     std::vector<StringPiece> tokens;
@@ -98,32 +107,14 @@ size_t Phrase::GetLength() const {
     return m_length;
 }
 
-std::string Phrase::ToString() const
+StringContainer Phrase::ToString() const
 {
-    std::stringstream ss;
-    for(size_t i = m_start;
-            i < m_start + m_length; i++)
-    {
-        if(i > m_start)
-            ss << " ";
-        ss << m_parentSentence->GetTokenString(i);
-    }
-    return ss.str();
+    return m_string.as_string();
 }
 
 bool Phrase::operator<(const Phrase& rhs) const
 {
-    std::vector<StringPiece>::const_iterator
-    begin1 = m_parentSentence->GetTokens().begin()
-             + m_start,
-    end1 = m_parentSentence->GetTokens().begin()
-           + m_start + m_length,
-    begin2 = rhs.m_parentSentence->GetTokens().begin()
-             + rhs.m_start,
-    end2 = rhs.m_parentSentence->GetTokens().begin()
-           + rhs.m_start + rhs.m_length;
-
-    return lexicographical_compare(begin1, end1, begin2, end2);
+    return m_string < rhs.m_string;
 }
 
 TargetPhrase::TargetPhrase(SentencePtr parentSentence, size_t start,
@@ -138,10 +129,11 @@ const DirectedAlignment TargetPhrase::GetAlignment() const {
             ->GetAlignment();
 
     DirectedAlignment align;
-    for(size_t i = m_sourceStart; i < m_sourceStart + m_sourceLength; ++i) {
+    for(size_t i = m_sourceStart; i < m_sourceStart + m_sourceLength
+        && i < sentenceAlign.size(); ++i) {
         BOOST_FOREACH(size_t j, sentenceAlign[i]) {
             if(m_start <= j && j < m_start + m_length) {
-                size_t a = i - m_sourceStart; // - ?
+                size_t a = i - m_sourceStart;
                 size_t b = j - m_start;
 
                 if(align.size() <= a)
@@ -153,9 +145,9 @@ const DirectedAlignment TargetPhrase::GetAlignment() const {
     return align;
 }
 
-const std::string TargetPhrase::GetAlignmentString() const {
+const StringContainer TargetPhrase::GetAlignmentString() const {
     const DirectedAlignment align = GetAlignment();
-    std::stringstream ss;
+    StringStream ss;
     bool first = true;
     for(size_t i = 0; i < align.size(); ++i) {
         BOOST_FOREACH(size_t j, align[i]) {
@@ -168,7 +160,7 @@ const std::string TargetPhrase::GetAlignmentString() const {
     return ss.str();
 }
 
-AlignedTargetSentence::AlignedTargetSentence(const std::string& trg,
+AlignedTargetSentence::AlignedTargetSentence(const StringContainer& trg,
                                  const DirectedAlignment& align)
     : Sentence(trg), m_alignment(align)
 {

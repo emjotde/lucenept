@@ -17,7 +17,10 @@ class LucenePT
 {
 public:
     LucenePT(const std::string&, bool = false);
-    void CreatePhrase(const std::string&, bool inverse = false);
+
+    void AllPhrases(const std::string&, bool = false);
+    void CreatePhrase(const std::string&, bool = false);
+    void CreatePhrase(const PhrasePtr&, bool = false);
 
 private:
     void CountTargetPhrases(const PhrasePtr&,
