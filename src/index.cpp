@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <boost/foreach.hpp>
+#include <boost/program_options.hpp>
 #include <sstream>
 
 #include <lucene++/LuceneHeaders.h>
@@ -14,18 +15,62 @@ using namespace Lucene;
 
 int main(int argc, char** argv)
 {
+    namespace po = boost::program_options;
 
-    if(argc < 5)
-    {
-        std::cerr << "Wrong arguments" << std::endl;
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("index", po::value<std::string>(), "Path to index")
+        ("source", po::value<std::string>(), "Path to source sentences")
+        ("target", po::value<std::string>(), "Path to target sentences")
+        ("align", po::value<std::string>(), "Path to alignments")
+    ;
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        return 1;
+    }
+
+    std::string indexPath;
+    if (vm.count("index")) {
+        indexPath = vm["index"].as<std::string>();
+    } else {
+        std::cerr << "No index given" << std::endl;
         exit(1);
     }
 
-    String indexDir(_U(argv[1]));
+    std::string sourcePath;
+    if (vm.count("source")) {
+        sourcePath = vm["source"].as<std::string>();
+    } else {
+        std::cerr << "No source file given" << std::endl;
+        exit(1);
+    }
+
+    std::string targetPath;
+    if (vm.count("target")) {
+        targetPath = vm["target"].as<std::string>();
+    } else {
+        std::cerr << "No target file given" << std::endl;
+        exit(1);
+    }
+
+    std::string alignPath;
+    if (vm.count("align")) {
+        alignPath = vm["align"].as<std::string>();
+    } else {
+        std::cerr << "No align file given" << std::endl;
+        exit(1);
+    }
+
+    std::ifstream sourceIn(sourcePath.c_str()), targetIn(targetPath.c_str()), alignIn(alignPath.c_str());
+
+    String indexDir(_U(indexPath.c_str()));
     std::cout << _B(indexDir) << std::endl;
-
-    std::ifstream sourceIn(argv[2]), targetIn(argv[3]), alignIn(argv[4]);
-
     if (!FileUtils::isDirectory(indexDir))
         FileUtils::createDirectory(indexDir);
 

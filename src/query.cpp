@@ -5,6 +5,12 @@
 
 int main(int argc, char** argv)
 {
+    if(argc < 2)
+    {
+        std::cerr << "No index given. Terminating." << std::endl;
+        exit(1);
+    }
+
     LucenePT lucenePt(argv[1], true);
     size_t lines = 0;
     std::string line;
