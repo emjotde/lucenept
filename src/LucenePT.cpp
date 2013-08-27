@@ -4,7 +4,7 @@
 #include <boost/range/adaptors.hpp>
 
 LucenePT::LucenePT(const std::string& dir, bool intoMemory)
-    : m_maxSamples(20), m_maxTargetPhrases(20), m_maxPhraseLength(7),
+    : m_maxSamples(100), m_maxTargetPhrases(20), m_maxPhraseLength(7),
     m_index(new LuceneIndex(dir, intoMemory))
 { }
 
@@ -16,7 +16,7 @@ void LucenePT::CountTargetPhrases(const PhrasePtr& phrase,
     HitsPtr sample = hits;
     if(m_maxSamples != 0 && sample->size() > m_maxSamples)
         // Sample from the back, more recent documents usually come last
-        sample = TopNSampling(hits->rbegin(), hits->rend());
+        sample = RandomSampling(hits->rbegin(), hits->rend());
 
     BOOST_FOREACH(Hit hit, *sample)
     {
@@ -45,13 +45,13 @@ void LucenePT::AllPhrases(const std::string& sentenceString, bool inverse)
             && start + length <= sentence->Size(); ++length)
         {
             PhrasePtr phrase = sentence->GetPhrase(start, length);
-            std::cout << phrase->ToString() << std::endl;
+            //std::cout << phrase->ToString() << std::endl;
             if(skip.count(phrase) == 0) {
                 CreatePhrase(phrase, inverse);
                 skip.insert(phrase);
             }
             else {
-                std::cout << "Skipped" << std::endl;
+                //std::cout << "Skipped" << std::endl;
             }
         }
     }
@@ -78,11 +78,11 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
 
     typedef std::vector<double> Scores;
 
-//    HitsPtr srcHits = m_index->GetHits(inputPhrase, inverse);
-//    std::vector<int> srcIds;
-//    BOOST_FOREACH(Hit h, *srcHits)
-//        if(srcIds.empty() || srcIds.back() != h.doc)
-//            srcIds.push_back(h.doc);
+    HitsPtr srcHits = m_index->GetHits(inputPhrase, inverse);
+    std::vector<int> srcIds;
+    BOOST_FOREACH(Hit h, *srcHits)
+        if(srcIds.empty() || srcIds.back() != h.doc)
+            srcIds.push_back(h.doc);
 
     // Calculate scores from counts
     std::multimap<Scores, PhrasePtr> scoreMap;
@@ -91,25 +91,25 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
     {
         Scores scores;
 
-//        HitsPtr trgHits = m_index->GetHits(tp, !inverse);
-//        std::vector<int> trgIds;
-//        BOOST_FOREACH(Hit h, *trgHits)
-//            if(trgIds.empty() || trgIds.back() != h.doc)
-//                trgIds.push_back(h.doc);
-//
-//        std::vector<int> commonIds;
-//        std::set_intersection(srcIds.begin(), srcIds.end(), trgIds.begin(),
-//                              trgIds.end(), std::back_inserter(commonIds));
-//
-//        int cfe = commonIds.size();
-//        int cf = srcIds.size();
-//        int ce = trgIds.size();
-//        int N = m_index->Size();
-//
-//        double pv = -log(fisher_exact(cfe, cf, ce, N));
+        HitsPtr trgHits = m_index->GetHits(tp, !inverse);
+        std::vector<int> trgIds;
+        BOOST_FOREACH(Hit h, *trgHits)
+            if(trgIds.empty() || trgIds.back() != h.doc)
+                trgIds.push_back(h.doc);
 
-        //if(pv < 20)
-        //    continue;
+        std::vector<int> commonIds;
+        std::set_intersection(srcIds.begin(), srcIds.end(), trgIds.begin(),
+                              trgIds.end(), std::back_inserter(commonIds));
+
+        int cfe = commonIds.size();
+        int cf = srcIds.size();
+        int ce = trgIds.size();
+        int N = m_index->Size();
+
+        double pv = -log(fisher_exact(cfe, cf, ce, N));
+
+        if(pv < 20)
+            continue;
 
         //*************************************************************
         // Directed phrase probability rowP(e|f)
@@ -135,7 +135,7 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
 //        scores.push_back(cf);
 //        scores.push_back(ce);
 //        scores.push_back(N);
-//        scores.push_back(pv);
+        scores.push_back(pv);
 
         //*************************************************************
 
@@ -146,12 +146,15 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
     std::multimap<Scores, PhrasePtr>::const_reverse_iterator revIt;
     for(revIt = scoreMap.rbegin(); revIt != scoreMap.rend(); revIt++)
     {
+        const Scores& scores = revIt->first;
+        TargetPhrasePtr targetPhrase
+            = boost::shared_static_cast<TargetPhrase>(revIt->second);
+
         std::cout << inputPhrase->ToString() << " ||| "
-            << revIt->second->ToString() << " |||";
-        BOOST_FOREACH(float score, revIt->first)
+            << targetPhrase->ToString() << " |||";
+        BOOST_FOREACH(float score, scores)
             std::cout << " " << score;
-        std::cout << " ||| " << boost::shared_static_cast<TargetPhrase>(
-            revIt->second)->GetAlignmentString();
+        std::cout << " ||| " << targetPhrase->GetAlignmentString();
         std::cout << std::endl;
 
         // only output m_maxTargetPhrases
@@ -183,10 +186,7 @@ double fisher_exact(int cfe, int ce, int cf, int num)
         total_p += cp;
         double coef = (double)(b)*(double)(c) / (double)(a+1) / (double)(d+1);
         cp *= coef;
-        ++a;
-        --c;
-        ++d;
-        --b;
+        ++a; --c; ++d; --b;
     }
     return total_p;
 }
