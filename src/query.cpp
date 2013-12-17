@@ -13,6 +13,7 @@ int main(int argc, char** argv)
     desc.add_options()
         ("help,h", "produce help message")
         ("index,i", po::value<std::string>(), "Path to index")
+        ("memory,m", "Path to index")
     ;
 
     po::variables_map vm;
@@ -32,7 +33,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    LucenePT lucenePt(indexPath, true);
+    LucenePT lucenePt(indexPath, vm.count("memory") > 0);
     size_t lines = 0;
     std::string line;
     while (std::getline(std::cin, line))

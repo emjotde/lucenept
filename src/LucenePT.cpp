@@ -4,7 +4,7 @@
 #include <boost/range/adaptors.hpp>
 
 LucenePT::LucenePT(const std::string& dir, bool intoMemory)
-    : m_maxSamples(100), m_maxTargetPhrases(20), m_maxPhraseLength(7),
+    : m_maxSamples(100), m_maxTargetPhrases(30), m_maxPhraseLength(7),
     m_index(new LuceneIndex(dir, intoMemory))
 { }
 
@@ -91,22 +91,22 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
     {
         Scores scores;
 
-        HitsPtr trgHits = m_index->GetHits(tp, !inverse);
-        std::vector<int> trgIds;
-        BOOST_FOREACH(Hit h, *trgHits)
-            if(trgIds.empty() || trgIds.back() != h.doc)
-                trgIds.push_back(h.doc);
+        //HitsPtr trgHits = m_index->GetHits(tp, !inverse);
+        //std::vector<int> trgIds;
+        //BOOST_FOREACH(Hit h, *trgHits)
+        //    if(trgIds.empty() || trgIds.back() != h.doc)
+        //        trgIds.push_back(h.doc);
 
-        std::vector<int> commonIds;
-        std::set_intersection(srcIds.begin(), srcIds.end(), trgIds.begin(),
-                              trgIds.end(), std::back_inserter(commonIds));
+        //std::vector<int> commonIds;
+        //std::set_intersection(srcIds.begin(), srcIds.end(), trgIds.begin(),
+        //                      trgIds.end(), std::back_inserter(commonIds));
 
-        int cfe = commonIds.size();
-        int cf = srcIds.size();
-        int ce = trgIds.size();
-        int N = m_index->Size();
-
-        double pv = -log(fisher_exact(cfe, cf, ce, N));
+        //int cfe = commonIds.size();
+        //int cf = srcIds.size();
+        //int ce = trgIds.size();
+        //int N = m_index->Size();
+        //
+        //double pv = -log(fisher_exact(cfe, cf, ce, N));
 
         //if(pv < 20)
         //    continue;
@@ -135,7 +135,7 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
 //        scores.push_back(cf);
 //        scores.push_back(ce);
 //        scores.push_back(N);
-        scores.push_back(pv);
+//        scores.push_back(pv);
 
         //*************************************************************
 
