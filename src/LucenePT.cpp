@@ -78,11 +78,11 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
 
     typedef std::vector<double> Scores;
 
-    HitsPtr srcHits = m_index->GetHits(inputPhrase, inverse);
-    std::vector<int> srcIds;
-    BOOST_FOREACH(Hit h, *srcHits)
-        if(srcIds.empty() || srcIds.back() != h.doc)
-            srcIds.push_back(h.doc);
+    //HitsPtr srcHits = m_index->GetHits(inputPhrase, inverse);
+    //std::vector<int> srcIds;
+    //BOOST_FOREACH(Hit h, *srcHits)
+    //    if(srcIds.empty() || srcIds.back() != h.doc)
+    //        srcIds.push_back(h.doc);
 
     // Calculate scores from counts
     std::multimap<Scores, PhrasePtr> scoreMap;
