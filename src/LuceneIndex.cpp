@@ -80,6 +80,9 @@ HitsPtr LuceneIndex::GetHits(const std::vector<String>& phraseTerms,
 
 SentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
 {
+    if(m_sentenceCache->count(hit.doc) > 0)
+        return (*m_sentenceCache)[hit.doc];
+    
     DocumentPtr doc = m_reader->document(hit.doc);
     ByteArray align = doc->getBinaryValue(L"alignment");
 
@@ -107,7 +110,8 @@ SentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
         }
     }
     SentencePtr as(new AlignedTargetSentence(target, alignment));
-    return as->shared_from_this();
+    (*m_sentenceCache)[hit.doc] = as->shared_from_this();
+    return (*m_sentenceCache)[hit.doc];
 }
 
 String LuceneIndex::PopulateCache(const std::vector<String>& phraseTerms,

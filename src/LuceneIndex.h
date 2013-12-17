@@ -16,6 +16,9 @@ class LuceneIndex
 private:
     typedef boost::unordered_map<Lucene::String, HitsPtr> HitCache;
     typedef boost::shared_ptr<HitCache> HitCachePtr;
+    
+    typedef boost::unordered_map<size_t, SentencePtr> SentenceCache;
+    typedef boost::shared_ptr<SentenceCache> SentenceCachePtr;
 
 public:
     LuceneIndex(const std::string&, bool = false);
@@ -71,6 +74,8 @@ private:
     Lucene::IndexReaderPtr m_reader;
     HitCachePtr m_cache;
     HitCachePtr m_cacheInverse;
+    
+    SentenceCachePtr m_sentenceCache;
 };
 
 #endif

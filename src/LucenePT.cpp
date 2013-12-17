@@ -4,7 +4,7 @@
 #include <boost/range/adaptors.hpp>
 
 LucenePT::LucenePT(const std::string& dir, bool intoMemory)
-    : m_maxSamples(100), m_maxTargetPhrases(30), m_maxPhraseLength(7),
+    : m_maxSamples(1000), m_maxTargetPhrases(30), m_maxPhraseLength(7),
     m_index(new LuceneIndex(dir, intoMemory))
 { }
 
@@ -16,7 +16,7 @@ void LucenePT::CountTargetPhrases(const PhrasePtr& phrase,
     HitsPtr sample = hits;
     if(m_maxSamples != 0 && sample->size() > m_maxSamples)
         // Sample from the back, more recent documents usually come last
-        sample = RandomSampling(hits->rbegin(), hits->rend());
+        sample = TopNSampling(hits->rbegin(), hits->rend());
 
     BOOST_FOREACH(Hit hit, *sample)
     {
