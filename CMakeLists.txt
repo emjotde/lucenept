@@ -23,7 +23,6 @@ MESSAGE( STATUS "boost found: includes in ${Boost_INCLUDE_DIRS}, library in ${Bo
         ${Boost_SYSTEM_LIBRARY_RELEASE})
 ENDIF (Boost_FOUND)
                         
-set(OBJ_LIBS lucenept)
 set(DIRS src)
 
 foreach(dir ${DIRS})
