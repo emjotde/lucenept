@@ -11,7 +11,7 @@ if(NOT EXISTS "${LPP_DIR}/include/lucene++/LuceneHeaders.h")
   message(SEND_ERROR "Can't find LuceneHeaders.h in ${LPP_DIR}/include/lucene++")
 endif()
 include_directories(${LPP_DIR}/include)
-FIND_LIBRARY(LPP_LIBRARY lucene++ ${LPP_DIR}/lub)
+FIND_LIBRARY(LPP_LIBRARY lucene++ ${LPP_DIR}/lib)
 set(EXT_LIBS ${EXT_LIBS} ${LPP_LIBRARY})
 
 find_package(Boost COMPONENTS program_options thread filesystem system)
