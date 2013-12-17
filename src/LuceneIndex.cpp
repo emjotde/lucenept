@@ -23,7 +23,8 @@
 using namespace Lucene;
 
 LuceneIndex::LuceneIndex(const std::string& directory, bool intoMemory)
-    : m_cache(new HitCache()), m_cacheInverse(new HitCache)
+    : m_cache(new HitCache()), m_cacheInverse(new HitCache()), 
+      m_sentenceCache(new SentenceCache()), m_sentenceCacheInverse(new SentenceCache())
 {
     DirectoryPtr dir;
     if (intoMemory)
@@ -80,8 +81,9 @@ HitsPtr LuceneIndex::GetHits(const std::vector<String>& phraseTerms,
 
 SentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
 {
-    if(m_sentenceCache->count(hit.doc) > 0)
-        return (*m_sentenceCache)[hit.doc];
+    SentenceCachePtr t_sentenceCache = inverse ? m_sentenceCacheInverse : m_sentenceCache;
+    if(t_sentenceCache->count(hit.doc) > 0)
+        return (*t_sentenceCache)[hit.doc];
     
     DocumentPtr doc = m_reader->document(hit.doc);
     ByteArray align = doc->getBinaryValue(L"alignment");
@@ -110,8 +112,8 @@ SentencePtr LuceneIndex::GetAlignedSentence(const Hit& hit, bool inverse)
         }
     }
     SentencePtr as(new AlignedTargetSentence(target, alignment));
-    (*m_sentenceCache)[hit.doc] = as->shared_from_this();
-    return (*m_sentenceCache)[hit.doc];
+    (*t_sentenceCache)[hit.doc] = as->shared_from_this();
+    return (*t_sentenceCache)[hit.doc];
 }
 
 String LuceneIndex::PopulateCache(const std::vector<String>& phraseTerms,

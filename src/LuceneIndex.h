@@ -76,6 +76,7 @@ private:
     HitCachePtr m_cacheInverse;
     
     SentenceCachePtr m_sentenceCache;
+    SentenceCachePtr m_sentenceCacheInverse;
 };
 
 #endif
