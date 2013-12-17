@@ -9,6 +9,7 @@ set(EXT_LIBS)
 
 find_package(LucenePlusPlus REQUIRED)
 if(LucenePlusPlus_FOUND)
+    include_directories(${LucenePlusPlus_INCLUDE_DIRS})
     SET(EXT_LIBS ${EXT_LIBS}
         ${LucenePlusPlus_LIBRARIES})
 endif(LucenePlusPlus_FOUND)

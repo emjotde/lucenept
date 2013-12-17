@@ -26,5 +26,4 @@ find_library(LucenePlusPlus_LIBRARY
 set(LucenePlusPlus_PROCESS_INCLUDES LucenePlusPlus_INCLUDE_DIR LucenePlusPlus_INCLUDE_DIRS)
 set(LucenePlusPlus_PROCESS_LIBS LucenePlusPlus_LIBRARY LucenePlusPlus_LIBRARIES)
 
-include_directories(${LucenePlusPlus_INCLUDE_DIRS})
 libfind_process(LucenePlusPlus)
