@@ -108,8 +108,8 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
 
         double pv = -log(fisher_exact(cfe, cf, ce, N));
 
-        if(pv < 20)
-            continue;
+        //if(pv < 20)
+        //    continue;
 
         //*************************************************************
         // Directed phrase probability rowP(e|f)
@@ -148,7 +148,7 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
     {
         const Scores& scores = revIt->first;
         TargetPhrasePtr targetPhrase
-            = boost::shared_static_cast<TargetPhrase>(revIt->second);
+            = boost::static_pointer_cast<TargetPhrase>(revIt->second);
 
         std::cout << inputPhrase->ToString() << " ||| "
             << targetPhrase->ToString() << " |||";

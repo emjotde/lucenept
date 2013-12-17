@@ -125,7 +125,7 @@ TargetPhrase::TargetPhrase(SentencePtr parentSentence, size_t start,
 
 const DirectedAlignment TargetPhrase::GetAlignment() const {
     const DirectedAlignment& sentenceAlign
-        = boost::shared_static_cast<AlignedTargetSentence>(m_parentSentence)
+        = boost::static_pointer_cast<AlignedTargetSentence>(m_parentSentence)
             ->GetAlignment();
 
     DirectedAlignment align;

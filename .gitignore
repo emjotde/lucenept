@@ -12,8 +12,13 @@
 *.la
 *.a
 
-# Directories
+# Codeblocks
+build
 bin
 obj
 *.idx
 *.depend
+*.layout
+
+# CMake
+*.cmake
