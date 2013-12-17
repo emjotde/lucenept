@@ -15,20 +15,22 @@ link_directories(${LPP_DIR}/lib)
 FIND_LIBRARY(LPP_LIBRARY lucene++ ${LPP_DIR}/lib)
 message(STATUS LPP_LIBRARY ${LPP_LIBRARY} )
 if(LPP_LIBRARY)
-    
     set(EXT_LIBS ${EXT_LIBS} ${LPP_LIBRARY})
 else(LPP_LIBRARY)
     message(SEND_ERROR "Cannot find LPP libraries. Terminating." )
 endif(LPP_LIBRARY)
 
-find_package(Boost COMPONENTS program_options thread filesystem system)
-if(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
-    set(EXT_LIBS ${EXT_LIBS} ${Boost_LIBRARIES})
-else(Boost_FOUND)
-    message(SEND_ERROR "Cannot find Boost libraries. Terminating." )
-endif(Boost_FOUND)
-
+SET(Boost_USE_STATIC_LIBS   ${LUCENE_USE_STATIC_BOOST_LIBS})
+SET(Boost_USE_MULTITHREADED ON)
+find_package( Boost 1.38.0 COMPONENTS system thread program_options REQUIRED)
+IF (Boost_FOUND)
+MESSAGE( STATUS "boost found: includes in ${Boost_INCLUDE_DIRS}, library in ${Boost_LIBRARY_DIRS}")
+    SET(EXT_LIBS ${EXT_LIBS}
+        ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
+        ${Boost_SYSTEM_LIBRARY_RELEASE}
+        ${Boost_THREAD_LIBRARY_RELEASE})
+ENDIF (Boost_FOUND)
+                        
 set(OBJ_LIBS lucenept)
 set(DIRS src)
 
