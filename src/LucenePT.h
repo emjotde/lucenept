@@ -57,6 +57,7 @@ private:
     size_t m_maxSamples;
     size_t m_maxTargetPhrases;
     size_t m_maxPhraseLength;
+    
     boost::shared_ptr<LuceneIndex> m_index;
 
     // Random number generator

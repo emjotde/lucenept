@@ -64,8 +64,9 @@ public:
     Phrase(SentencePtr parentSentence, size_t, size_t);
     std::string ToString() const;
     size_t GetStart() const;
+    const StringPiece GetStringPiece() const;
     size_t GetLength() const;
-    const std::vector<StringPiece> GetTokens();
+    const StringPiece GetToken(size_t) const;
     bool operator<(const Phrase& rhs) const;
 
 protected:
@@ -111,6 +112,8 @@ private:
     DirectedAlignment m_alignment;
     std::vector<uint8_t> m_numberAligned;
 };
+
+typedef boost::shared_ptr<AlignedTargetSentence> AlignedTargetSentencePtr;
 
 
 #endif // ALIGNEDSENTENCE_HDR

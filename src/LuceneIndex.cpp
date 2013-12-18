@@ -55,16 +55,9 @@ HitsPtr LuceneIndex::GetHits(const std::string& phrase, bool inverse)
 
 HitsPtr LuceneIndex::GetHits(const PhrasePtr& phrase, bool inverse)
 {
-    const std::vector<StringPiece> tokens = phrase->GetTokens();
-    return GetHits(tokens, inverse);
-}
-
-HitsPtr LuceneIndex::GetHits(const std::vector<StringPiece>& phraseTerms,
-                             bool inverse)
-{
     std::vector<String> terms;
-    BOOST_FOREACH(StringPiece term, phraseTerms)
-        terms.push_back(_U2((const uint8_t*)term.data(), term.length()));
+    for(size_t i = 0; i < phrase->GetLength(); i++)
+        terms.push_back(_U2((const uint8_t*)phrase->GetToken(i).data(), phrase->GetToken(i).length()));
     return GetHits(terms, 0, terms.size(), inverse);
 }
 

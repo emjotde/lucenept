@@ -19,11 +19,11 @@ int main(int argc, char** argv)
 
     po::options_description desc("Allowed options");
     desc.add_options()
-        ("help", "produce help message")
-        ("index", po::value<std::string>(), "Path to index")
-        ("source", po::value<std::string>(), "Path to source sentences")
-        ("target", po::value<std::string>(), "Path to target sentences")
-        ("align", po::value<std::string>(), "Path to alignments")
+        ("help,h", "produce help message")
+        ("lucene,l", po::value<std::string>(), "Path to index")
+        ("source,s", po::value<std::string>(), "Path to source sentences")
+        ("target,t", po::value<std::string>(), "Path to target sentences")
+        ("align,a", po::value<std::string>(), "Path to alignments")
     ;
 
     po::variables_map vm;
@@ -36,10 +36,10 @@ int main(int argc, char** argv)
     }
 
     std::string indexPath;
-    if (vm.count("index")) {
-        indexPath = vm["index"].as<std::string>();
+    if (vm.count("lucene")) {
+        indexPath = vm["lucene"].as<std::string>();
     } else {
-        std::cerr << "No index given" << std::endl;
+        std::cerr << "No lucene index given" << std::endl;
         exit(1);
     }
 

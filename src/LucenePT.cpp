@@ -18,41 +18,44 @@ void LucenePT::CountTargetPhrases(const PhrasePtr& phrase,
         // Sample from the back, more recent documents usually come last
         sample = TopNSampling(hits->rbegin(), hits->rend());
 
+    std::map<std::pair<StringPiece, StringPiece>, size_t> lexCounts; 
+    
+    StringContainer nullString = "NULL";
+    StringPiece nullStringPiece = nullString;
+    size_t lexTotal = 0;
+    
     BOOST_FOREACH(Hit hit, *sample)
     {
         TargetPhrases targetPhrases;
-
+        
         SentencePtr as = m_index->GetAlignedSentence(hit, inverse);
         boost::static_pointer_cast<AlignedTargetSentence>(as)
             ->ExtractTargetPhrase(targetPhrases, hit.start, hit.length,
                                   m_maxPhraseLength);
 
+        if(hit.length == 1 && !inverse) {
+            const DirectedAlignment& a = boost::static_pointer_cast<AlignedTargetSentence>(as)->GetAlignment();
+            for(size_t i = 0; i < a[hit.start].size(); ++i) {
+                lexCounts[std::make_pair(phrase->GetToken(0), as->GetToken(a[hit.start][i]))]++;
+                lexTotal++;
+            }
+            if(a[hit.start].size() == 0) {
+                lexCounts[std::make_pair(phrase->GetToken(0), nullStringPiece)]++;
+                lexTotal++;
+            }
+        }
+                                  
         totalCount += targetPhrases.size();
 
-        BOOST_FOREACH(TargetPhrasePtr tp, targetPhrases)
+        BOOST_FOREACH(TargetPhrasePtr tp, targetPhrases) {
             phraseCounts[tp]++;
+        }
     }
-}
-
-std::set<PhrasePtr> skip;
-
-void LucenePT::AllPhrases(const std::string& sentenceString, bool inverse)
-{
-    SentencePtr sentence(new Sentence(sentenceString));
-    for(size_t start = 0; start < sentence->Size(); ++start)
-    {
-        for(size_t length = 1; length < m_maxPhraseLength
-            && start + length <= sentence->Size(); ++length)
-        {
-            PhrasePtr phrase = sentence->GetPhrase(start, length);
-            //std::cout << phrase->ToString() << std::endl;
-            if(skip.count(phrase) == 0) {
-                CreatePhrase(phrase, inverse);
-                skip.insert(phrase);
-            }
-            else {
-                //std::cout << "Skipped" << std::endl;
-            }
+    
+    if(phrase->GetLength() == 1 && !inverse) {
+        typedef std::pair<std::pair<StringPiece, StringPiece>, size_t> Blabla;
+        BOOST_FOREACH(Blabla item, lexCounts) {
+            std::cerr << item.first.first.ToString() << " " << item.first.second.ToString() << " " << item.second/(float)lexTotal << std::endl;
         }
     }
 }
@@ -78,6 +81,7 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
 
     typedef std::vector<double> Scores;
 
+    // Get source occurrences for pruning
     HitsPtr srcHits = m_index->GetHits(inputPhrase, inverse);
     std::vector<int> srcIds;
     BOOST_FOREACH(Hit h, *srcHits)
@@ -91,6 +95,7 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
     {
         Scores scores;
 
+        // Get target occurrences for pruning
         HitsPtr trgHits = m_index->GetHits(tp, !inverse);
         std::vector<int> trgIds;
         BOOST_FOREACH(Hit h, *trgHits)
@@ -107,12 +112,11 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
         int N = m_index->Size();
         
         double pv = -log(fisher_exact(cfe, cf, ce, N));
-
-        if(pv < 20)
-            continue;
+        //if(pv < 20)
+        //    continue;
 
         //*************************************************************
-        // Directed phrase probability rowP(e|f)
+        // Directed phrase probability P(e|f)
         float pef = (float)phraseCounts[tp] / totalCount;
 
         // Inverted phrase probability P(f|e) - costly to calculate
@@ -124,6 +128,9 @@ void LucenePT::CreatePhrase(const PhrasePtr& inputPhrase, bool inverse)
         float pfe = (float)phraseCountsTarget[inputPhrase]
             / totalCountTarget;
 
+        // Calculate lexical probability Plex(e|f) TODO
+        // Calculate inverted lexical probability Plex(f|e) TODO
+            
         // Phrase penalty
         float pen = 1.0;
 
@@ -189,4 +196,27 @@ double fisher_exact(int cfe, int ce, int cf, int num)
         ++a; --c; ++d; --b;
     }
     return total_p;
+}
+
+void LucenePT::AllPhrases(const std::string& sentenceString, bool inverse)
+{
+    static std::set<PhrasePtr> skip;
+    
+    SentencePtr sentence(new Sentence(sentenceString));
+    for(size_t start = 0; start < sentence->Size(); ++start)
+    {
+        for(size_t length = 1; length < m_maxPhraseLength
+            && start + length <= sentence->Size(); ++length)
+        {
+            PhrasePtr phrase = sentence->GetPhrase(start, length);
+            //std::cout << phrase->ToString() << std::endl;
+            if(skip.count(phrase) == 0) {
+                CreatePhrase(phrase, inverse);
+                skip.insert(phrase);
+            }
+            else {
+                //std::cout << "Skipped" << std::endl;
+            }
+        }
+    }
 }

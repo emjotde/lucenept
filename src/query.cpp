@@ -12,8 +12,10 @@ int main(int argc, char** argv)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help,h", "produce help message")
-        ("index,i", po::value<std::string>(), "Path to index")
-        ("memory,m", "Path to index")
+        ("lucene,l", po::value<std::string>(), "Path to index")
+        ("memory,m", "Load lucene index into memory")
+        ("invert,i", "Invert languages and alignment")
+        ("phrase-table,p", "Treat input as sentence and output unique subphrases")
     ;
 
     po::variables_map vm;
@@ -26,8 +28,8 @@ int main(int argc, char** argv)
     }
 
     std::string indexPath;
-    if (vm.count("index")) {
-        indexPath = vm["index"].as<std::string>();
+    if (vm.count("lucene")) {
+        indexPath = vm["lucene"].as<std::string>();
     } else {
         std::cerr << "No index given" << std::endl;
         exit(1);
@@ -38,7 +40,10 @@ int main(int argc, char** argv)
     std::string line;
     while (std::getline(std::cin, line))
     {
-        lucenePt.AllPhrases(line, false);
+        if(vm.count("phrase-table") > 0)
+            lucenePt.AllPhrases(line, vm.count("invert") > 0);
+        else
+            lucenePt.CreatePhrase(line, vm.count("invert") > 0);
         std::cerr << lines++ << std::endl;
     }
 

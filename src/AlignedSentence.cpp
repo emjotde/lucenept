@@ -92,11 +92,8 @@ Phrase::Phrase(SentencePtr parentSentence, size_t start, size_t length)
     m_string = StringPiece(data, dataEnd - data);
 }
 
-const std::vector<StringPiece> Phrase::GetTokens() {
-    std::vector<StringPiece> tokens;
-    for(size_t i = m_start; i < m_start + m_length; ++i)
-        tokens.push_back(m_parentSentence->GetToken(i));
-    return tokens;
+const StringPiece Phrase::GetToken(size_t i) const {
+    return m_parentSentence->GetToken(m_start + i);
 }
 
 size_t Phrase::GetStart() const {
@@ -123,10 +120,10 @@ TargetPhrase::TargetPhrase(SentencePtr parentSentence, size_t start,
     m_sourceLength(sourceLength)
 { }
 
+// TODO: Optimize this, best to remove entirely
 const DirectedAlignment TargetPhrase::GetAlignment() const {
     const DirectedAlignment& sentenceAlign
-        = boost::static_pointer_cast<AlignedTargetSentence>(m_parentSentence)
-            ->GetAlignment();
+        = boost::static_pointer_cast<AlignedTargetSentence>(m_parentSentence)->GetAlignment();
 
     DirectedAlignment align;
     for(size_t i = m_sourceStart; i < m_sourceStart + m_sourceLength
